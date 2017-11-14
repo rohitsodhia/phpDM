@@ -1,5 +1,5 @@
 {
-	"name": "rohitsodhia/phpDM",
+	"name": "rohitsodhia/phpdm",
 	"description": "A ORM/ODM with models decoupled from the database",
 	"keywords": ["orm", "odm", "mysql", "mongo"],
 	"type": "package",

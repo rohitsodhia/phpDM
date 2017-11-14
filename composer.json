@@ -17,6 +17,6 @@
 			"phpDM\\": "src/"
 		}
 	},
-	"version": "0.1.0", //Version of the package
-	"minimum-stability": "dev" //Stability
+	"version": "0.1.0",
+	"minimum-stability": "dev"
 }

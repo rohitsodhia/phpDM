@@ -1,0 +1,22 @@
+{
+	"name": "rohitsodhia/phpDM",
+	"description": "A ORM/ODM with models decoupled from the database",
+	"keywords": ["orm", "odm", "mysql", "mongo"],
+	"type": "package",
+	"require": {
+		"mongodb/mongodb": "^1.2",
+		"nesbot/Carbon": "^1.22"
+	},
+	"license": "GNU General",
+	"authors": [{
+		"name": "Rohit Sodhia", 
+		"email": "sodhia.rohit@gmail.com"
+	}],
+	"autoload": {
+		"psr-4": {
+			"phpDM\\": "src/"
+		}
+	},
+	"version": "0.1.0", //Version of the package
+	"minimum-stability": "dev" //Stability
+}

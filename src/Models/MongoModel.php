@@ -8,7 +8,7 @@ class MongoModel extends BaseModel
 	public static $type = 'mongo';
 	static protected $primaryKey = '_id';
 
-	protected static function castValue(string $cast, $value) {
+	public static function castValue(string $cast, $value) {
 		if ($possibleValue = parent::castValue($cast, $value)) {
 			return $possibleValue;
 		} elseif ($cast === 'timestamp') {
@@ -45,11 +45,8 @@ class MongoModel extends BaseModel
 
 	public function save() {
 		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
-		if ($this->data[static::$primaryKey] || in_array(static::$primaryKey, $this->changed[])) {
-			$changedData = [];
-			foreach ($this->changed as $field) {
-				$changedData[$field] = $this->data[$field];
-			}
+		if (!$this->new && $this->data[static::$primaryKey]) {
+			$changedData = $this->getChangedFields();
 			$query = new $queryBuilder();
 			$return = $query
 				->collection(static::getCollectionName())
@@ -58,10 +55,11 @@ class MongoModel extends BaseModel
 			if ($return->getMatchedCount() !== 0) {
 				return $return;
 			}
+		} elseif ($this->new) {
+			$data = $this->getFields();
+			$query = new $queryBuilder();
+			$query->collection(static::getCollectionName())->insert($data);
 		}
-
-		$query = new $queryBuilder();
-		$query->collection(static::getCollectionName())->insert($this->data);
 	}
 
 	

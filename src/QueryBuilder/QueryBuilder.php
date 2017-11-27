@@ -77,40 +77,5 @@ class QueryBuilder
 		$this->skip = ($page - 1) * $numItems;
 		return $this;
 	}
-
-	public function first() {
-		$options = $this->buildOptions();
-		$data = $this->connection->findOne($this->conditions, $options);
-		if (!$data) {
-			return $data;
-		}
-		if ($this->hydrate === null) {
-			return $data;
-		}
-		$hydrateClass = $this->hydrate;
-		$obj = $hydrateClass::hydrate($data);
-		return $obj;
-	}
-
-	public function get() {
-		$options = $this->buildOptions();
-		$data = $this->connection->find($this->conditions, $options);
-		if ($this->hydrate === null) {
-			return $data;
-		}
-		$objs = [];
-		$hydrateClass = $this->hydrate;
-		foreach ($data as $iData) {
-			$obj = $hydrateClass::hydrate($iData);
-			$objs[] = $obj;
-		}
-		return $objs;
-	}
-
-	public function insert($data) {
-	}
-
-	public function update($data) {
-	}
-
+	
 }

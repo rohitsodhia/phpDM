@@ -50,6 +50,13 @@ class BaseModel
 			if (method_exists($this, $accessor)) {
 				$value = $this->{$accessor}($value);
 			}
+		} elseif (substr(static::$fields[$key], 0, 7) === 'object:') {
+			$class = substr(static::$fields[$key], 7);
+			if (!class_exists($class)) {
+				throw new Exception('Field not an object');
+			}
+			$value = new $class();
+			$this->data[$key] = $value;
 		}
 		return $value ?: null;
 	}
@@ -64,16 +71,47 @@ class BaseModel
 		if (method_exists($this, $accessor)) {
 			$value = $this->{$accessor}($value);
 		}
-		if (gettype(static::$fields[$key]) === 'string') {
-			$value = static::castValue(static::$fields[$key], $value);
-		}
+		$value = static::parseValue($value, static::$fields[$key]);
 		$this->data[$key] = $value;
 		if (!in_array($value, $this->changed)) {
 			$this->changed[] = $key;
 		}
 	}
 
-	protected static function castValue(string $cast, $value) {
+	public static function parseValue($value, $options) {
+		if (gettype($options) === 'string') {
+			$cast = $options;
+		} elseif (isset($options['type']) && gettype($options['type']) === 'string') {
+			$cast = $options['type'];
+		}
+		
+		if ($castValue = static::castValue($cast, $value)) {
+			return $castValue;
+		} elseif (preg_match('/array\((.+?)\)/', $cast, $match)) {
+			if (gettype($value) !== 'array') {
+				return [];
+			}
+			$casts = preg_split('/\W+/', $match[1]);
+			if (count($casts) === 0) {
+				throw new Exception('Invalid cast');
+			}
+			foreach ($value as $key => $sValue) {
+				$value[$key] = static::castValue($casts[0], $sValue);
+			}
+			return $value;
+		} elseif (substr($cast, 0, 7) === 'object:') {
+			$class = substr($cast, 7);
+			// if (!isset($options['type'])) {
+			// 	throw new \Exception('No type defined: ' . $key);
+			// }
+			$cleanObj = $class::hydrate((array) $value);
+			return $cleanObj;
+		}
+		
+		return $value;
+	}
+
+	public static function castValue(string $cast, $value) {
 		if ($cast === 'bool' || $cast === 'boolean') {
 			return (bool) $value;
 		} elseif ($cast === 'int' || $cast === 'integer') {
@@ -90,18 +128,6 @@ class BaseModel
 			} elseif (in_array(gettype($value), ['integer', 'string'])) {
 				return new \Carbon\Carbon($value);
 			}
-		} elseif (preg_match('/array\((.+?)\)/', $cast, $match)) {
-			if (gettype($value) !== 'array') {
-				return [];
-			}
-			$casts = preg_split('/\W+/', $match[1]);
-			if (count($casts) === 0) {
-				throw new Exception('Invalid cast');
-			}
-			foreach ($value as $key => $sValue) {
-				$value[$key] = static::castValue($casts[0], $sValue);
-			}
-			return $value;
 		}
 	}
 
@@ -122,6 +148,51 @@ class BaseModel
 		$obj->resetChanged();
 		$obj->setNew(false);;
 		return $obj;
+	}
+
+	public function getFields() {
+		$data = [];
+		foreach (static::$fields as $field => $options) {
+			if (!isset($this->data[$field])) {
+				continue;
+			}
+			if (is_string($options) && substr(static::$fields[$field], 0, 6) !== 'object') {
+				$data[$field] = $this->data[$field];
+			} elseif (is_string($options)) {
+				if (is_object($this->data[$field])) {
+					$cData = $this->data[$field]->getFields();
+					if (count($cData)) {
+						$data[$field] = $cData;
+					}
+				}
+			}
+		}
+		return $data;
+	}
+
+	public function getChangedFields() {
+		$changedData = [];
+		foreach (static::$fields as $field => $options) {
+			if (!isset($this->data[$field])) {
+				continue;
+			}
+			if (is_string($options) && substr(static::$fields[$field], 0, 6) !== 'object') {
+				if (in_array($field, $this->changed)) {
+					$changedData[$field] = $this->data[$field];
+				}
+			} elseif (is_string($options)) {
+				if (in_array($field, $this->changed) && !is_object($this->data[$field])) {
+					$changedData[$field] = null;
+				} elseif (!in_array($field, $this->changed) && is_object($this->data[$field])) {
+					// $data = $this->data[$field]->getChangedFields();
+					$data = $this->data[$field]->getFields();
+					if (count($data)) {
+						$changedData[$field] = $data;
+					}
+				}
+			}
+		}
+		return $changedData;
 	}
 
 }

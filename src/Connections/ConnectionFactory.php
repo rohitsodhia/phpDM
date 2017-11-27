@@ -11,11 +11,13 @@ class ConnectionFactory
 	public static function init() {
 		self::registerConnection('mongo', [
 			'interface' => Interfaces\MongoConnectionInterface::class,
-			'queryBuilder' => \phpDM\QueryBuilder\MongoQueryBuilder::class
+			'queryBuilder' => \phpDM\QueryBuilder\MongoQueryBuilder::class,
+			'model' => \phpDM\Models\MongoModel::class
 		]);
 		self::registerConnection('mysql', [
 			'interface' => Interfaces\MysqlConnectionInterface::class,
-			'queryBuilder' => \phpDM\QueryBuilder\MysqlQueryBuilder::class
+			'queryBuilder' => \phpDM\QueryBuilder\MysqlQueryBuilder::class,
+			'model' => \phpDM\Models\MysqlModel::class
 		]);
 	}
 

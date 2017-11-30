@@ -16,6 +16,9 @@ class MongoModel extends BaseModel
 				return \Carbon\Carbon::instance($value->toDateTime());
 			}
 		} elseif ($cast === 'mongoId') {
+			if (is_string($value)) {
+				$value = new \MongoDB\BSON\ObjectId($value);
+			}
 			return $value;
 		}
 	}
@@ -47,8 +50,8 @@ class MongoModel extends BaseModel
 		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
 		if (!$this->new && $this->data[static::$primaryKey]) {
 			$changedData = $this->getChangedFields();
-			$query = new $queryBuilder();
-			$return = $query
+			$queryBuilder = new $queryBuilder(static::$connection ?: null);
+			$return = $queryBuilder
 				->collection(static::getCollectionName())
 				->where(static::$primaryKey, $this->{static::$primaryKey})
 				->update($changedData);
@@ -57,8 +60,8 @@ class MongoModel extends BaseModel
 			}
 		} elseif ($this->new) {
 			$data = $this->getFields();
-			$query = new $queryBuilder();
-			$query->collection(static::getCollectionName())->insert($data);
+			$queryBuilder = new $queryBuilder(static::$connection ?: null);
+			$queryBuilder->collection(static::getCollectionName())->insert($data);
 		}
 	}
 

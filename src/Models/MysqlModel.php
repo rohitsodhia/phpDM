@@ -7,11 +7,9 @@ class MysqlModel extends BaseModel
 
 	public static $type = 'mysql';
 
-	protected static function castValue(string $cast, $value) {
+	public static function castValue(string $cast, $value) {
 		if ($possibleValue = parent::castValue($cast, $value)) {
 			return $possibleValue;
-		} elseif ($cast === 'mongoId') {
-			return $value;
 		}
 	}
 
@@ -21,7 +19,7 @@ class MysqlModel extends BaseModel
 		}
 		$primaryKey = static::$primaryKey;
 		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
-		$queryBuilder = new $queryBuilder();
+		$queryBuilder = new $queryBuilder(static::$connection ?: null);
 		$queryBuilder->setHydrate(static::class);
 		$queryBuilder = $queryBuilder->table(static::getTableName())->select(array_keys(static::$fields));
 		$result = $queryBuilder->where($primaryKey, $id)->first();
@@ -30,23 +28,21 @@ class MysqlModel extends BaseModel
 
 	public function save() {
 		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
-		if ($this->data[static::$primaryKey] || in_array(static::$primaryKey, $this->changed[])) {
-			$changedData = [];
-			foreach ($this->changed as $field) {
-				$changedData[$field] = $this->data[$field];
-			}
-			$query = new $queryBuilder();
-			$return = $query
-				->collection(static::getCollectionName())
+		if (!$this->new && $this->data[static::$primaryKey]) {
+			$changedData = $this->getChangedFields();
+			$queryBuilder = new $queryBuilder(static::$connection ?: null);
+			$return = $queryBuilder
+				->table(static::getTablenName())
 				->where(static::$primaryKey, $this->{static::$primaryKey})
 				->update($changedData);
 			if ($return->getMatchedCount() !== 0) {
 				return $return;
 			}
+		} elseif ($this->new) {
+			$data = $this->getFields();
+			$queryBuilder = new $queryBuilder(static::$connection ?: null);
+			$queryBuilder->table(static::getTableName())->insert($data);
 		}
-
-		$query = new $queryBuilder();
-		$query->collection(static::getCollectionName())->insert($this->data);
 	}
 
 	

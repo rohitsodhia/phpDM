@@ -4,7 +4,8 @@ namespace phpDM\Connections\Interfaces;
 
 class MysqlConnectionInterface extends ConnectionInterface
 {
-	public function createConnection(array $config = []) {
+	
+	public static function createConnection(array $config = []) {
 		$config = array_merge([
 			
 		], $config);
@@ -13,4 +14,5 @@ class MysqlConnectionInterface extends ConnectionInterface
 		$mysql->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 		return $mysql;
 	}
+
 }

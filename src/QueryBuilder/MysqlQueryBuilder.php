@@ -88,7 +88,7 @@ class MysqlQueryBuilder extends QueryBuilder
 		} else {
 			$query .= '*';
 		}
-		$query  .= ' FROM ' . $this->from;
+		$query  .= ' FROM ' . $this->table;
 		if (count($this->conditions)) {
 			$query .= ' WHERE ' . implode(' AND ', $this->conditions);
 		}
@@ -139,8 +139,30 @@ class MysqlQueryBuilder extends QueryBuilder
 		return $objs;
 	}
 
+	protected static function encodeData($data) {
+		foreach ($data as $key => $value) {
+			if (is_object($value) && (get_class($value) === 'DateTime' || get_class($value) === 'Carbon\Carbon')) {
+				$data[$key] = $value->format('Y-m-d H:i:s');
+			}
+			if (is_array($value)) {
+				$data[$key] = json_encode($value);
+			}
+		}
+		return $data;
+	}
+
 	public function insert($data) {
-		return $this->statement->insertOne($data);
+		$data = static::encodeData($data);
+		$query = "INSERT INTO {$this->table} SET ";
+		$columns = [];
+		$values = [];
+		foreach ($data as $key => $value) {
+			$columns[] = "`{$key}` = :{$key}";
+			$values[":{$key}"] = $value;
+		}
+		$query .= implode(', ', $columns);
+		$pQuery = $this->connection->prepare($query);
+		return $pQuery->execute($values);
 	}
 
 	public function update($data, $multiple = false) {

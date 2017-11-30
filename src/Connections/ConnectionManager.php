@@ -6,25 +6,27 @@ class ConnectionManager
 {
 
 	private static $connections = [];
-	private static $connectionNameMap = [];
+	private static $connectionNameTypeMap = [];
 
 	public static function addConnection($config, string $name = null) {
-		if (sizeof(ConnectionFactory::getConnectionInterfaces()) === 0) {
+		if (count(ConnectionFactory::getConnectionInterfaces()) === 0) {
 			ConnectionFactory::init();
 		}
+		$interface = ConnectionFactory::getConnectionInterface($config['type']);
+		$interface = new $interface($config);
 		if (!$name) {
-			$interface = ConnectionFactory::getConnectionInterface($config['type']);
-			self::$connections[$config['type']][] = (new $interface())->createConnection($config);
+			self::$connections[$config['type']][] = $interface;
 		} else {
-			$interface = ConnectionFactory::getConnectionInterface($config['type']);
-			self::$connections[$config['type']][$name] = (new $interface())->createConnection($config);
-			self::$connectionNameMap[$name] = $config['type'];
+			self::$connections[$config['type']][$name] = $interface;
+			self::$connectionNameTypeMap[$name] = $config['type'];
 		}
 	}
 
-	public static function getConnection(string $name = null) {
+	public static function getConnection(string $name = null, string $type = null) {
 		if ($name !== null) {
-			return self::$connections[self::$connectionNameMap[$name]][$name];
+			return self::$connections[self::$connectionNameTypeMap[$name]][$name];
+		} elseif ($type !== null) {
+			return self::getConnectionByType($type);
 		} else {
 			return null;
 		}

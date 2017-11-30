@@ -114,7 +114,7 @@ class MongoQueryBuilder extends QueryBuilder
 
 	public function first() {
 		$options = $this->buildOptions();
-		$data = $this->connection->{$this->from}->findOne($this->conditions, $options);
+		$data = $this->connection->{$this->table}->findOne($this->conditions, $options);
 		if (!$data) {
 			return $data;
 		}
@@ -128,7 +128,7 @@ class MongoQueryBuilder extends QueryBuilder
 
 	public function get() {
 		$options = $this->buildOptions();
-		$data = $this->connection->{$this->from}->find($this->conditions, $options);
+		$data = $this->connection->{$this->table}->find($this->conditions, $options);
 		if ($this->hydrate === null) {
 			return $data;
 		}
@@ -142,15 +142,15 @@ class MongoQueryBuilder extends QueryBuilder
 	}
 
 	public function insert($data) {
-		return $this->connection->{$this->from}->insertOne($data);
+		return $this->connection->{$this->table}->insertOne($data);
 	}
 
 	public function update($data, $multiple = false) {
 		if ($this->conditions !== []) {
 			if (!$multiple) {
-				return $this->connection->{$this->from}->updateOne($this->conditions, ['$set' => $data]);
+				return $this->connection->{$this->table}->updateOne($this->conditions, ['$set' => $data]);
 			} else {
-				return $this->connection->{$this->from}->updateMany($this->conditions, ['$set' => $data]);
+				return $this->connection->{$this->table}->updateMany($this->conditions, ['$set' => $data]);
 			}
 		} else {
 			return null;

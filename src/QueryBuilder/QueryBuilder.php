@@ -6,9 +6,10 @@ class QueryBuilder
 {
 
 	protected static $type;
+	protected $interface;
 	protected $connection;
 	protected $hydrate;
-	protected $from;
+	protected $table;
 	protected $select = [];
 	protected $conditions;
 	protected $sort = [];
@@ -17,10 +18,11 @@ class QueryBuilder
 
 	public function __construct(string $connection = null) {
 		try {
-			$this->connection = \phpDM\Connections\ConnectionManager::getConnection($connection);
-			if (!$this->connection) {
-				$this->connection = \phpDM\Connections\ConnectionManager::getConnectionByType(static::$type);
+			$this->interface = \phpDM\Connections\ConnectionManager::getConnection($connection);
+			if (!$this->interface) {
+				$this->interface = \phpDM\Connections\ConnectionManager::getConnectionByType(static::$type);
 			}
+			$this->connection = $this->interface->getConnection();
 		} catch (\Exception $e) { }
 	}
 
@@ -29,7 +31,7 @@ class QueryBuilder
 	}
 
 	public function table(string $table) {
-		$this->from = $table;
+		$this->table = $table;
 		return $this;
 	}
 
@@ -77,5 +79,5 @@ class QueryBuilder
 		$this->skip = ($page - 1) * $numItems;
 		return $this;
 	}
-	
+
 }

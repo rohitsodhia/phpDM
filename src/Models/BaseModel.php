@@ -6,7 +6,7 @@ class BaseModel
 {
 
 	public static $type;
-	public $connection;
+	public static $connection;
 	protected $table;
 	protected $new = true;
 	static protected $primaryKey;
@@ -24,14 +24,20 @@ class BaseModel
 		
 		$table = @end(explode('\\', get_called_class()));
 		$table = \phpDM\Inflect::pluralize($table);
-		$table = \phpDM\Helpers::toSnakeCase($table);
+		$connection = \phpDM\Connections\ConnectionManager::getConnection(static::$connection, static::$type);
+		$case = $connection->getOption('case');
+		if ($case === 'camel') {
+			$table = lcfirst($table);
+		} else {
+			$table = \phpDM\Helpers::toSnakeCase($table);
+		}
 		return $table;
 	}
 
 	public static function __callStatic($method, $params) {
 		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
 		if (method_exists($queryBuilder, $method)) {
-			$queryBuilder = new $queryBuilder();
+			$queryBuilder = new $queryBuilder(static::$connection ?: null);
 			$queryBuilder->setHydrate(static::class);
 			$queryBuilder = $queryBuilder->table(static::getTableName())->select(array_keys(static::$fields));
 			return call_user_func_array([$queryBuilder, $method], $params);
@@ -88,7 +94,9 @@ class BaseModel
 		if ($castValue = static::castValue($cast, $value)) {
 			return $castValue;
 		} elseif (preg_match('/array\((.+?)\)/', $cast, $match)) {
-			if (gettype($value) !== 'array') {
+			if (gettype($value) === 'string' && $decoded = json_decode($value)) {
+				return $decoded;
+			} elseif (gettype($value) !== 'array') {
 				return [];
 			}
 			$casts = preg_split('/\W+/', $match[1]);

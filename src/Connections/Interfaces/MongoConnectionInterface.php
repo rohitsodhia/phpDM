@@ -4,7 +4,8 @@ namespace phpDM\Connections\Interfaces;
 
 class MongoConnectionInterface extends ConnectionInterface
 {
-	public function createConnection(array $config = []) {
+
+	public static function createConnection(array $config = []) {
 		$config = array_merge([
 			
 		], $config);
@@ -14,4 +15,5 @@ class MongoConnectionInterface extends ConnectionInterface
 			['typeMap' => ['array' => 'array', 'document' => 'object', 'root' => 'object']]
 		))->{$config['database']};
 	}
+
 }

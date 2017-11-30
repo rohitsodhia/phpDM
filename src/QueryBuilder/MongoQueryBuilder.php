@@ -142,10 +142,12 @@ class MongoQueryBuilder extends QueryBuilder
 	}
 
 	public function insert($data) {
+		$data = static::encodeData($data);
 		return $this->connection->{$this->table}->insertOne($data);
 	}
 
 	public function update($data, $multiple = false) {
+		$data = static::encodeData($data);
 		if ($this->conditions !== []) {
 			if (!$multiple) {
 				return $this->connection->{$this->table}->updateOne($this->conditions, ['$set' => $data]);

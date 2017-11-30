@@ -6,6 +6,7 @@ class MysqlModel extends BaseModel
 {
 
 	public static $type = 'mysql';
+	static protected $primaryKey = 'id';
 
 	public static function castValue(string $cast, $value) {
 		if ($possibleValue = parent::castValue($cast, $value)) {
@@ -32,16 +33,15 @@ class MysqlModel extends BaseModel
 			$changedData = $this->getChangedFields();
 			$queryBuilder = new $queryBuilder(static::$connection ?: null);
 			$return = $queryBuilder
-				->table(static::getTablenName())
+				->table(static::getTableName())
 				->where(static::$primaryKey, $this->{static::$primaryKey})
+				->limit(1)
 				->update($changedData);
-			if ($return->getMatchedCount() !== 0) {
-				return $return;
-			}
+			return $return ? $queryBuilder->rowCount() : false;
 		} elseif ($this->new) {
 			$data = $this->getFields();
 			$queryBuilder = new $queryBuilder(static::$connection ?: null);
-			$queryBuilder->table(static::getTableName())->insert($data);
+			return $queryBuilder->table(static::getTableName())->insert($data);
 		}
 	}
 

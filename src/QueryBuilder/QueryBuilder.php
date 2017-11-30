@@ -80,4 +80,8 @@ class QueryBuilder
 		return $this;
 	}
 
+	protected static function encodeData($data) {
+		return $data;
+	}
+	
 }

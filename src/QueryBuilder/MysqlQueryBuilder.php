@@ -9,6 +9,7 @@ class MysqlQueryBuilder extends QueryBuilder
 	protected $table;
 	protected $conditions = [];
 	protected $params = [];
+	protected $statement;
 
 	public function getParams() {
 		return $this->params;
@@ -81,6 +82,10 @@ class MysqlQueryBuilder extends QueryBuilder
 		return $this;
 	}
 
+	public function rowCount() {
+		return $this->statement->rowCount();
+	}
+
 	public function buildSelectQuery() {
 		$query = 'SELECT ';
 		if (count($this->select)) {
@@ -141,11 +146,12 @@ class MysqlQueryBuilder extends QueryBuilder
 
 	protected static function encodeData($data) {
 		foreach ($data as $key => $value) {
-			if (is_object($value) && (get_class($value) === 'DateTime' || get_class($value) === 'Carbon\Carbon')) {
+/*			if (is_bool($value)) {
+				$data[$key] = $value ? '1' : '0';
+			} else*/if (is_object($value) && (get_class($value) === 'DateTime' || get_class($value) === 'Carbon\Carbon')) {
 				$data[$key] = $value->format('Y-m-d H:i:s');
-			}
-			if (is_array($value)) {
-				$data[$key] = json_encode($value);
+			} elseif (is_array($value) || (is_object($value) && get_class($value) === 'ArrayObject')) {
+				$data[$key] = json_encode((array) $value);
 			}
 		}
 		return $data;
@@ -161,17 +167,33 @@ class MysqlQueryBuilder extends QueryBuilder
 			$values[":{$key}"] = $value;
 		}
 		$query .= implode(', ', $columns);
-		$pQuery = $this->connection->prepare($query);
-		return $pQuery->execute($values);
+		$this->statement = $this->connection->prepare($query);
+		return $this->statement->execute($values);
 	}
 
 	public function update($data, $multiple = false) {
 		if ($this->conditions !== []) {
-			if (!$multiple) {
-				return $this->statement->updateOne($this->conditions, ['$set' => $data]);
-			} else {
-				return $this->statement->updateMany($this->conditions, ['$set' => $data]);
+			$data = static::encodeData($data);
+			$query = "UPDATE {$this->table} SET ";
+			$columns = [];
+			$values = [];
+			foreach ($data as $key => $value) {
+				$columns[] = "`{$key}` = ?";
+				$values[] = $value;
 			}
+			$query .= implode(', ', $columns);
+			if (count($this->conditions)) {
+				$query .= ' WHERE ' . implode(' AND ', $this->conditions);
+			}
+			if ($this->limit) {
+				if ($this->skip) {
+					$query .= ' LIMIT ' . $this->skip . ', ' . $this->limit;
+				} else {
+					$query .= ' LIMIT ' . $this->limit;
+				}
+			}
+			$this->statement = $this->connection->prepare($query);
+			return $this->statement->execute(array_merge($values, $this->params));
 		} else {
 			return null;
 		}

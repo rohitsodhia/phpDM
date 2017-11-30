@@ -12,6 +12,7 @@ class BaseModel
 	static protected $primaryKey;
 	static protected $fields = [];
 	protected $data = [];
+	protected $original = [];
 	protected $changed = [];
 
 	public function __construct() {
@@ -95,9 +96,15 @@ class BaseModel
 			return $castValue;
 		} elseif (preg_match('/array\((.+?)\)/', $cast, $match)) {
 			if (gettype($value) === 'string' && $decoded = json_decode($value)) {
-				return $decoded;
-			} elseif (gettype($value) !== 'array') {
-				return [];
+				if (gettype($decoded) === 'array') {
+					$value = new \ArrayObject($decoded);
+				} else {
+					return new \ArrayObject();
+				}
+			} elseif (gettype($value) === 'array') {
+				$value = new \ArrayObject($value);
+			} elseif (!is_object($value) && get_class($value) !== 'ArrayOjbect') {
+				return new \ArrayObject();
 			}
 			$casts = preg_split('/\W+/', $match[1]);
 			if (count($casts) === 0) {
@@ -143,6 +150,22 @@ class BaseModel
 		$this->new = $new;
 	}
 
+	public function setOriginal() {
+		foreach ($this->data as $key => $value) {
+			if (is_object($value)) {
+				$value = clone $value;
+			}
+			$this->original[$key] = $value;
+		}
+	}
+
+	public function getOriginal(string $field = null) {
+		if ($field) {
+			return isset($this->original[$field]) ? $this->original[$field] : null;
+		}
+		return $this->original;
+	}
+
 	public function resetChanged() {
 		$this->changed = [];
 	}
@@ -153,8 +176,9 @@ class BaseModel
 		foreach ($data as $key => $value) {
 			$obj->$key = $value;
 		}
+		$obj->setOriginal();
 		$obj->resetChanged();
-		$obj->setNew(false);;
+		$obj->setNew(false);
 		return $obj;
 	}
 
@@ -184,7 +208,12 @@ class BaseModel
 			if (!isset($this->data[$field])) {
 				continue;
 			}
-			if (is_string($options) && substr(static::$fields[$field], 0, 6) !== 'object') {
+			if (is_object($this->data[$field]) && get_class($this->data[$field]) === 'ArrayObject') {
+				$original = $this->getOriginal($field);
+				if (json_encode($this->data[$field]) !== json_encode($original)) {
+					$changedData[$field] = $this->data[$field];
+				}
+			} elseif (is_string($options) && substr(static::$fields[$field], 0, 6) !== 'object') {
 				if (in_array($field, $this->changed)) {
 					$changedData[$field] = $this->data[$field];
 				}

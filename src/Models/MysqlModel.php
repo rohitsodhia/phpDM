@@ -37,11 +37,15 @@ class MysqlModel extends BaseModel
 				->where(static::$primaryKey, $this->{static::$primaryKey})
 				->limit(1)
 				->update($changedData);
-			return $return ? $queryBuilder->rowCount() : false;
+			return $return ? $queryBuilder->rowCount() : null;
 		} elseif ($this->new) {
 			$data = $this->getFields();
 			$queryBuilder = new $queryBuilder(static::$connection ?: null);
-			return $queryBuilder->table(static::getTableName())->insert($data);
+			$success = $queryBuilder->table(static::getTableName())->insert($data);
+			if ($success !== false) {
+				$this->data[static::$primaryKey] = $queryBuilder->lastInsertId();
+				return $success;
+			}
 		}
 	}
 

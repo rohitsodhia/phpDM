@@ -59,9 +59,19 @@ class MongoModel extends BaseModel
 				return $return;
 			}
 		} elseif ($this->new) {
+			if (
+				(isset(static::$primaryKey) && static::$primaryKey !== null && $this->data[static::$primaryKey] === null) ||
+				(!isset(static::$primaryKey) && $this->data['_id'] === null)
+			) {
+				$this->data['_id'] = new \MongoDB\BSON\ObjectId();
+			}
 			$data = $this->getFields();
 			$queryBuilder = new $queryBuilder(static::$connection ?: null);
-			$queryBuilder->collection(static::getCollectionName())->insert($data);
+			$success = $queryBuilder->collection(static::getCollectionName())->insert($data);
+			if ($success !== false) {
+				$this->data[static::$primaryKey] = $queryBuilder->lastInsertId();
+				return $success;
+			}
 		}
 	}
 

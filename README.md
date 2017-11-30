@@ -60,16 +60,23 @@ The following field types are available:
 * `string`
 * `timestamp` - uses Carbon to extend DateTime
 * `array()` - accepts an array of the type within the parenthesis, ex. `array(string)`
+* `object:\Models\User` - accepts a class (with namespace) after the colon, to be used as an embedded object. The class **must** be a phpDM Model of the same type as the model embedding it.
 
 While not strictly necessary, its important to define the primary key:
 ```php
 static protected $primaryKey = 'id';
 ```
 
-By default, phpDB will search for the plural, snake case version of your model's class name as it's table. For example, a model `UserRole` will use the table `user_roles`. If you'd like to use a different table, add the `$table` field.
+By default, phpDB will search for the plural, snake case version of your model's class name as it's table. It requires following PSR-1 class naming conventions. For example, a model `UserRole` will use the table `user_roles`. If you'd like to use a different table, add the `$table` field.
 
 ```php
 protected static $table = 'user_admin_roles';
+```
+
+If you prefer to use camel case, you can pass an array with the key of `options` when adding a connection, with a `case` key with the value of 'camel'. phpDM will now use a pluralized version of your model's class name, with a lower-cased first letter.
+
+```
+'options' => ['case' => 'camel']
 ```
 
 MongoDB models can also use `$collection`.
@@ -84,6 +91,8 @@ User::find(1)
 
 This will retrieve the values where the primary key is equal to `1` and populate and return a `User` object.
 
+##### Retriving multiple records
+
 To get back multiple results, use the `get` method.
 
 ```php
@@ -91,6 +100,8 @@ User::get()
 ```
 
 This will return populated `User` objects of all entries in the `users` table.
+
+##### Conditions
 
 You can add conditions with the  `where`, `orWhere`, or `whereIn` methods.
 
@@ -127,3 +138,53 @@ Any query builder methods started staticly off a model return a query builder in
 ```php
 User::where('username', 'rohit')->orWhere('active', '!=', 0)->get()
 ```
+
+##### Sorting
+
+To add sorting, simply chain the `sort` function onto the Query Builder. The first parameter is the field to sort on, the second is the direction to sort on (`asc` for ascending or `desc` for descending). The default direction is ascending.
+
+```
+sort('registeredOn', 'desc');
+```
+
+To sort on multiple fields, chain multile sort functions together.
+
+##### Limiting
+
+To retrieve a limited number of rows, you can use the `limit` method, simply passing it an integer greater than zero. You can also skip entries using `skip`, passing it an integer greater than zero.
+
+You can do both together using `paginate`. Paginate takes two values, first the number of entries you want returned, second the page number, starting with 1.
+
+```
+paginate(20, 1)
+```
+
+will retrieve entries 0-19.
+
+```
+paginate(20, 2)
+```
+
+will retrieve entries 20-39.
+
+##### Saving data
+
+Whether creating a new database entry or updating an existing row, use the `save` method. Called on an instance of a model, it will check for any data that has been changed and save that data to the database. If there is no primary key, it will attempt to insert a new entry; if there is a primary key, it will attempt to update an entry. If the databse allows it, it will return the number of affected rows on success, or `false` on failure.
+
+```
+$user = new User();
+$user->username = 'rohit';
+$user->save();
+```
+
+This will insert a new entry with the `username` 'rohit'.
+
+```
+$user = User::find(1);
+$user->email = 'test@test.com';
+$user->save();
+```
+
+As this will retrieve the entry with the id '1', it will update the email and update the database.
+
+In MySQL, values of type `array` or `object` will be converted to json for storage.

@@ -143,7 +143,12 @@ class MongoQueryBuilder extends QueryBuilder
 
 	public function insert($data) {
 		$data = static::encodeData($data);
-		return $this->connection->{$this->table}->insertOne($data);
+		$success = $this->connection->{$this->table}->insertOne($data);
+		return $success;
+	}
+
+	public function lastInsertId() {
+		return $this->lastInsertId;
 	}
 
 	public function update($data, $multiple = false) {

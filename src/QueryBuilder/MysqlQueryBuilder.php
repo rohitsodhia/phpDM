@@ -76,8 +76,9 @@ class MysqlQueryBuilder extends QueryBuilder
 	}
 
 	public function sort($field, $direction = 'asc') {
-		if ($direction === 'asc' || $direction === 'desc') {
-			$this->sort[] = $field . ' ' . strtoupper($direction);
+		$direction = strtoupper($direction);
+		if ($direction === 'ASC' || $direction === 'DESC') {
+			$this->sort[] = $field . ' ' . $direction;
 		}
 		return $this;
 	}
@@ -169,6 +170,10 @@ class MysqlQueryBuilder extends QueryBuilder
 		$query .= implode(', ', $columns);
 		$this->statement = $this->connection->prepare($query);
 		return $this->statement->execute($values);
+	}
+
+	public function lastInsertId() {
+		return $this->statement->lastInsertId();
 	}
 
 	public function update($data, $multiple = false) {

@@ -111,23 +111,6 @@ class MysqlQueryBuilder extends QueryBuilder
 		return $query;
 	}
 
-	public function first() {
-		$this->limit = 1;
-		$query = $this->buildSelectQuery();
-		$pQuery = $this->connection->prepare($query);
-		$pQuery->execute($this->params);
-		$data = $pQuery->fetch();
-		if (!$data) {
-			return $data;
-		}
-		if ($this->hydrate === null) {
-			return $data;
-		}
-		$hydrateClass = $this->hydrate;
-		$obj = $hydrateClass::hydrate($data);
-		return $obj;
-	}
-
 	public function get() {
 		$query = $this->buildSelectQuery();
 		$pQuery = $this->connection->prepare($query);
@@ -173,7 +156,7 @@ class MysqlQueryBuilder extends QueryBuilder
 	}
 
 	public function lastInsertId() {
-		return $this->statement->lastInsertId();
+		return $this->connection->lastInsertId();
 	}
 
 	public function update($data, $multiple = false) {

@@ -14,6 +14,26 @@ class MysqlModel extends BaseModel
 		}
 	}
 
+	public static function addSoftDeleteWhere($queryBuilder) {
+		if (($key = array_search('deletedTimestamp', static::$fields)) !== false) {
+			$queryBuilder->where($key, null);
+		}
+		return $queryBuilder;
+	}
+
+	public static function first() {
+		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
+		$queryBuilder = new $queryBuilder(static::$connection ?: null);
+		$queryBuilder->setHydrate(static::class);
+		$queryBuilder = static::addSoftDeleteWhere($queryBuilder);
+		$return = $queryBuilder
+			->table(static::getTableName())
+			->select(array_keys(static::$fields))
+			->limit(1)
+			->get();
+		return $return;
+	}
+
 	public static function find($id) {
 		if (!isset(static::$primaryKey)) {
 			return null;
@@ -23,22 +43,33 @@ class MysqlModel extends BaseModel
 		$queryBuilder = new $queryBuilder(static::$connection ?: null);
 		$queryBuilder->setHydrate(static::class);
 		$queryBuilder = $queryBuilder->table(static::getTableName())->select(array_keys(static::$fields));
-		$result = $queryBuilder->where($primaryKey, $id)->first();
+		$queryBuilder->where($primaryKey, $id);
+		$queryBuilder = static::addSoftDeleteWhere($queryBuilder);
+		$result = $queryBuilder->first();
 		return $result;
 	}
 
-	public function save() {
+	public function updateOneOnPrimaryKey($data) {
 		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
+		$queryBuilder = new $queryBuilder(static::$connection ?: null);
+		$return = $queryBuilder
+			->table(static::getTableName())
+			->where(static::$primaryKey, $this->{static::$primaryKey})
+			->limit(1)
+			->update($data);
+		return $return ? $queryBuilder->rowCount() : null;
+	}
+
+	public function save() {
+		$curTime = new \Carbon\Carbon();
 		if (!$this->new && $this->data[static::$primaryKey]) {
+			$this->addTimestamps($curTime);
 			$changedData = $this->getChangedFields();
-			$queryBuilder = new $queryBuilder(static::$connection ?: null);
-			$return = $queryBuilder
-				->table(static::getTableName())
-				->where(static::$primaryKey, $this->{static::$primaryKey})
-				->limit(1)
-				->update($changedData);
+			$return = $this->updateOneOnPrimaryKey($changedData);
 			return $return ? $queryBuilder->rowCount() : null;
 		} elseif ($this->new) {
+			$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
+			$this->addTimestamps($curTime);
 			$data = $this->getFields();
 			$queryBuilder = new $queryBuilder(static::$connection ?: null);
 			$success = $queryBuilder->table(static::getTableName())->insert($data);
@@ -49,5 +80,11 @@ class MysqlModel extends BaseModel
 		}
 	}
 
+	public function delete() {
+		if (($key = array_search('deletedTimestamp', static::$fields)) !== false) {
+			$return = $this->updateOneOnPrimaryKey([$key => new \Carbon\Carbon()]);
+			return $return ? true : false;
+		}
+	}
 	
 }

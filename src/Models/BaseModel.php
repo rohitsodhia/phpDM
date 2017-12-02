@@ -10,6 +10,7 @@ class BaseModel
 	protected $table;
 	protected $new = true;
 	static protected $primaryKey;
+	static protected $timestampFormat = 'Y-m-d H:i:s';
 	static protected $fields = [];
 	protected $data = [];
 	protected $original = [];
@@ -135,7 +136,7 @@ class BaseModel
 			return (float) $value;
 		} elseif ($cast === 'string') {
 			return (string) $value;
-		} elseif ($cast === 'timestamp') {
+		} elseif ($cast === 'timestamp' || $cast === 'datetime') {
 			if ($value instanceof \Carbon\Carbon) {
 				return $value;
 			} elseif ($value instanceof \DateTime) {
@@ -230,6 +231,17 @@ class BaseModel
 			}
 		}
 		return $changedData;
+	}
+
+	protected function addTimestamps(\Carbon\Carbon $timestamp = null) {
+		if (($key = array_search('createdTimestamp', static::$fields)) !== false) {
+			if ($this->data[$key] === null) {
+				$this->data[$key] = $timestamp ?: new \Carbon\Carbon();
+			}
+		}
+		if (($key = array_search('updatedTimestamp', static::$fields)) !== false) {
+			$this->data[$key] = $timestamp ?: new \Carbon\Carbon();
+		}
 	}
 
 }

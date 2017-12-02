@@ -34,14 +34,36 @@ class MongoModel extends BaseModel
 		return static::getTableName();
 	}
 
-	public static function find($id) {
-		if (isset(static::$primaryKey)) {
-			$primaryKey = static::$primaryKey;
+	public static function addSoftDeleteWhere($queryBuilder) {
+		if (($key = array_search('deletedTimestamp', static::$fields)) !== false) {
+			$queryBuilder->where($key, null);
 		}
+		return $queryBuilder;
+	}
+
+	public static function first() {
 		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
-		$queryBuilder = new $queryBuilder();
+		$queryBuilder = new $queryBuilder(static::$connection ?: null);
+		$queryBuilder->setHydrate(static::class);
+		$queryBuilder = static::addSoftDeleteWhere($queryBuilder);
+		$return = $queryBuilder
+			->table(static::getTableName())
+			->select(array_keys(static::$fields))
+			->limit(1)
+			->get();
+		return $return;
+	}
+
+	public static function find($id) {
+		if (!isset(static::$primaryKey)) {
+			return null;
+		}
+		$primaryKey = static::$primaryKey;
+		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
+		$queryBuilder = new $queryBuilder(static::$connection ?: null);
 		$queryBuilder->setHydrate(static::class);
 		$queryBuilder = $queryBuilder->table(static::getTableName())->select(array_keys(static::$fields));
+		$queryBuilder = static::addSoftDeleteWhere($queryBuilder);
 		$result = $queryBuilder->where($primaryKey, $id)->first();
 		return $result;
 	}
@@ -49,6 +71,8 @@ class MongoModel extends BaseModel
 	public function save() {
 		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
 		if (!$this->new && $this->data[static::$primaryKey]) {
+			$curTime = new \Carbon\Carbon();
+			$this->addTimestamps($curTime);
 			$changedData = $this->getChangedFields();
 			$queryBuilder = new $queryBuilder(static::$connection ?: null);
 			$return = $queryBuilder
@@ -60,16 +84,17 @@ class MongoModel extends BaseModel
 			}
 		} elseif ($this->new) {
 			if (
-				(isset(static::$primaryKey) && static::$primaryKey !== null && $this->data[static::$primaryKey] === null) ||
+				(isset(static::$primaryKey) && static::$primaryKey !== null && (!isset($this->data[static::$primaryKey]) || $this->data[static::$primaryKey] === null)) ||
 				(!isset(static::$primaryKey) && $this->data['_id'] === null)
 			) {
-				$this->data['_id'] = new \MongoDB\BSON\ObjectId();
+				$this->data[static::$primaryKey ?: '_id'] = new \MongoDB\BSON\ObjectId();
 			}
+			$curTime = new \Carbon\Carbon();
+			$this->addTimestamps($curTime);
 			$data = $this->getFields();
 			$queryBuilder = new $queryBuilder(static::$connection ?: null);
 			$success = $queryBuilder->collection(static::getCollectionName())->insert($data);
 			if ($success !== false) {
-				$this->data[static::$primaryKey] = $queryBuilder->lastInsertId();
 				return $success;
 			}
 		}

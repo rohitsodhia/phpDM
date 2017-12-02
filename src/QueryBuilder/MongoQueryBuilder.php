@@ -128,17 +128,35 @@ class MongoQueryBuilder extends QueryBuilder
 
 	public function get() {
 		$options = $this->buildOptions();
-		$data = $this->connection->{$this->table}->find($this->conditions, $options);
+		if ($this->limit === 1) {
+			unset($options['limit']);
+			$data = $this->connection->{$this->table}->findOne($this->conditions, $options);
+		} else {
+			$data = $this->connection->{$this->table}->find($this->conditions, $options);
+		}
 		if ($this->hydrate === null) {
 			return $data;
 		}
 		$objs = [];
 		$hydrateClass = $this->hydrate;
+		if ($this->limit === 1) {
+			$obj = $hydrateClass::hydrate($iData);
+			return $obj;
+		}
 		foreach ($data as $iData) {
 			$obj = $hydrateClass::hydrate($iData);
 			$objs[] = $obj;
 		}
 		return $objs;
+	}
+
+	protected static function encodeData($data) {
+		foreach ($data as $key => $value) {
+			if (is_object($value) && get_class($value) === 'ArrayObject') {
+				$data[$key] = (array) $value;
+			}
+		}
+		return $data;
 	}
 
 	public function insert($data) {

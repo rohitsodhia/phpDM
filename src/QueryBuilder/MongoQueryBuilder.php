@@ -30,7 +30,7 @@ class MongoQueryBuilder extends QueryBuilder
 				return [$val1 => ['$ne' => $val2]];
 		}
 	}
-	
+
 	public function where() {
 		$args = func_get_args();
 		if (is_callable($args[0])) {
@@ -140,7 +140,7 @@ class MongoQueryBuilder extends QueryBuilder
 		$objs = [];
 		$hydrateClass = $this->hydrate;
 		if ($this->limit === 1) {
-			$obj = $hydrateClass::hydrate($iData);
+			$obj = $hydrateClass::hydrate($data);
 			return $obj;
 		}
 		foreach ($data as $iData) {

@@ -100,5 +100,5 @@ class MongoModel extends BaseModel
 		}
 	}
 
-	
+
 }

@@ -2,7 +2,7 @@
 
 namespace phpDM\Models;
 
-class BaseModel
+class BaseModel implements \JsonSerializable
 {
 
 	public static $type;
@@ -19,11 +19,15 @@ class BaseModel
 	public function __construct() {
 	}
 
+	public function jsonSerialize() {
+		return $this->getFields(true);
+	}
+
 	protected static function getTableName() {
 		if (isset(static::$table)) {
 			return static::$table;
 		}
-		
+
 		$table = @end(explode('\\', get_called_class()));
 		$table = \phpDM\Inflect::pluralize($table);
 		$connection = \phpDM\Connections\ConnectionManager::getConnection(static::$connection, static::$type);
@@ -92,7 +96,7 @@ class BaseModel
 		} elseif (isset($options['type']) && gettype($options['type']) === 'string') {
 			$cast = $options['type'];
 		}
-		
+
 		if ($castValue = static::castValue($cast, $value)) {
 			return $castValue;
 		} elseif (preg_match('/array\((.+?)\)/', $cast, $match)) {
@@ -123,7 +127,7 @@ class BaseModel
 			$cleanObj = $class::hydrate((array) $value);
 			return $cleanObj;
 		}
-		
+
 		return $value;
 	}
 
@@ -183,7 +187,7 @@ class BaseModel
 		return $obj;
 	}
 
-	public function getFields() {
+	public function getFields($pure = false) {
 		$data = [];
 		foreach (static::$fields as $field => $options) {
 			if (!isset($this->data[$field])) {
@@ -199,11 +203,14 @@ class BaseModel
 					}
 				}
 			}
+			if ($pure && is_object($data[$field]) && get_class($data[$field]) === 'ArrayObject') {
+				$data[$field] = (array) $data[$field];
+			}
 		}
 		return $data;
 	}
 
-	public function getChangedFields() {
+	public function getChangedFields($pure = false) {
 		$changedData = [];
 		foreach (static::$fields as $field => $options) {
 			if (!isset($this->data[$field])) {
@@ -228,6 +235,9 @@ class BaseModel
 						$changedData[$field] = $data;
 					}
 				}
+			}
+			if ($pure && is_object($data[$field]) && get_class($data[$field]) === 'ArrayObject') {
+				$data[$field] = (array) $data[$field];
 			}
 		}
 		return $changedData;

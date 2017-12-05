@@ -62,12 +62,16 @@ class BaseModel implements \JsonSerializable
 			if (method_exists($this, $accessor)) {
 				$value = $this->{$accessor}($value);
 			}
-		} elseif (substr(static::$fields[$key], 0, 7) === 'object:') {
-			$class = substr(static::$fields[$key], 7);
-			if (!class_exists($class)) {
-				throw new Exception('Field not an object');
+		} elseif ($this->fields[$key] === 'object'  || substr($this->fields[$key], 0, 7) === 'object:') {
+			if ($this->fields[$key] === 'object') {
+				$value = new GenericModel(static::class, $this->fields[$key]['fields']);
+			} else {
+				$class = substr($this->fields[$key], 7);
+				if (!class_exists($class)) {
+					throw new Exception('Field not an object');
+				}
+				$value = new $class();
 			}
-			$value = new $class();
 			$this->data[$key] = $value;
 		}
 		return $value ?: null;
@@ -90,13 +94,18 @@ class BaseModel implements \JsonSerializable
 		}
 	}
 
-	public static function parseValue($value, $options) {
-		if (gettype($options) === 'string') {
-			$cast = $options;
-		} elseif (isset($options['type']) && gettype($options['type']) === 'string') {
-			$cast = $options['type'];
+	protected static function getCast($cast) {
+		if (gettype($cast) === 'string') {
+			return $cast;
+		} elseif (isset($cast['type']) && gettype($cast['type']) === 'string') {
+			return $cast['type'];
 		}
+		return null;
+	}
 
+	public static function parseValue($value, $options) {
+		$cast = static::getCast($options);
+		
 		if ($castValue = static::castValue($cast, $value)) {
 			return $castValue;
 		} elseif (preg_match('/array\((.+?)\)/', $cast, $match)) {
@@ -119,12 +128,16 @@ class BaseModel implements \JsonSerializable
 				$value[$key] = static::castValue($casts[0], $sValue);
 			}
 			return $value;
-		} elseif (substr($cast, 0, 7) === 'object:') {
-			$class = substr($cast, 7);
-			// if (!isset($options['type'])) {
-			// 	throw new \Exception('No type defined: ' . $key);
-			// }
-			$cleanObj = $class::hydrate((array) $value);
+		} elseif ($cast === 'object' || substr($cast, 0, 7) === 'object:') {
+			if ($cast === 'object') {
+				$cleanObj = GenericModel::hydrate(static::class, $options['fields'], (array) $value);
+			} else {
+				$class = substr($cast, 7);
+				// if (!isset($options['type'])) {
+				// 	throw new \Exception('No type defined: ' . $key);
+				// }
+				$cleanObj = $class::hydrate((array) $value);
+			}
 			return $cleanObj;
 		}
 
@@ -193,9 +206,10 @@ class BaseModel implements \JsonSerializable
 			if (!isset($this->data[$field])) {
 				continue;
 			}
-			if (is_string($options) && substr(static::$fields[$field], 0, 6) !== 'object') {
+			$cast = static::getCast($options);
+			if (substr($cast, 0, 6) !== 'object') {
 				$data[$field] = $this->data[$field];
-			} elseif (is_string($options)) {
+			} else {
 				if (is_object($this->data[$field])) {
 					$cData = $this->data[$field]->getFields();
 					if (count($cData)) {
@@ -216,28 +230,29 @@ class BaseModel implements \JsonSerializable
 			if (!isset($this->data[$field])) {
 				continue;
 			}
-			if (is_object($this->data[$field]) && get_class($this->data[$field]) === 'ArrayObject') {
+			$cast = static::getCast($options);
+			if (substr($cast, 0, 5) === 'array' && is_object($this->data[$field]) && get_class($this->data[$field]) === 'ArrayObject') {
 				$original = $this->getOriginal($field);
 				if (json_encode($this->data[$field]) !== json_encode($original)) {
 					$changedData[$field] = $this->data[$field];
 				}
-			} elseif (is_string($options) && substr(static::$fields[$field], 0, 6) !== 'object') {
+			} elseif (substr($cast, 0, 6) !== 'object') {
 				if (in_array($field, $this->changed)) {
 					$changedData[$field] = $this->data[$field];
 				}
-			} elseif (is_string($options)) {
+			} else {
 				if (in_array($field, $this->changed) && !is_object($this->data[$field])) {
 					$changedData[$field] = null;
 				} elseif (!in_array($field, $this->changed) && is_object($this->data[$field])) {
 					// $data = $this->data[$field]->getChangedFields();
 					$data = $this->data[$field]->getFields();
-					if (count($data)) {
+					if (count($data) && $data !== $this->getOriginal($field)->getFields()) {
 						$changedData[$field] = $data;
 					}
 				}
 			}
-			if ($pure && is_object($data[$field]) && get_class($data[$field]) === 'ArrayObject') {
-				$data[$field] = (array) $data[$field];
+			if ($pure && is_object($changedData[$field]) && get_class($changedData[$field]) === 'ArrayObject') {
+				$changedData[$field] = (array) $changedData[$field];
 			}
 		}
 		return $changedData;

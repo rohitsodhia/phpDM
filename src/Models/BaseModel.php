@@ -70,7 +70,7 @@ class BaseModel implements \JsonSerializable
 			$value = new $class();
 			$this->data[$key] = $value;
 		}
-		return $value ?: null;
+		return $value;
 	}
 
 	public function __set(string $key, $value) {
@@ -252,6 +252,13 @@ class BaseModel implements \JsonSerializable
 		if (($key = array_search('updatedTimestamp', static::$fields)) !== false) {
 			$this->data[$key] = $timestamp ?: new \Carbon\Carbon();
 		}
+	}
+
+	public static function query() {
+		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
+		$queryBuilder->setHydrate(static::class);
+		$queryBuilder = $queryBuilder->table(static::getTableName())->select(array_keys(static::$fields));
+		return $queryBuilder;
 	}
 
 }

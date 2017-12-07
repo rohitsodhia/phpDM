@@ -75,7 +75,7 @@ class BaseModel implements \JsonSerializable
 			}
 			$this->data[$key] = $value;
 		}
-		return $value ?: null;
+		return $value;
 	}
 
 	public function __set(string $key, $value) {
@@ -280,6 +280,13 @@ class BaseModel implements \JsonSerializable
 			->limit(1)
 			->delete();
 		return $return ? $queryBuilder->rowCount() : null;
+	}
+
+	public static function query() {
+		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
+		$queryBuilder->setHydrate(static::class);
+		$queryBuilder = $queryBuilder->table(static::getTableName())->select(array_keys(static::$fields));
+		return $queryBuilder;
 	}
 
 }

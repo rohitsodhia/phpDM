@@ -194,10 +194,15 @@ class BaseModel implements \JsonSerializable
 	}
 
 	public static function hydrate($data) {
+		if ($data === null) {
+			return null;
+		}
 		$class = static::class;
 		$obj = new $class();
-		foreach ($data as $key => $value) {
-			$obj->$key = $value;
+		if (count($data)) {
+			foreach ($data as $key => $value) {
+				$obj->$key = $value;
+			}
 		}
 		$obj->setOriginal();
 		$obj->resetChanged();

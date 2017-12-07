@@ -154,7 +154,7 @@ class BaseModel implements \JsonSerializable
 			return (float) $value;
 		} elseif ($cast === 'str' || $cast === 'string') {
 			return (string) $value;
-		} elseif ($cast === 'timestamp' || $cast === 'datetime') {
+		} elseif (in_array($cast, ['timestamp', 'datetime', 'createdTimestamp', 'updatedTimestamp', 'deletedTimestamp'])) {
 			if ($value instanceof \Carbon\Carbon) {
 				return $value;
 			} elseif ($value instanceof \DateTime) {
@@ -172,10 +172,14 @@ class BaseModel implements \JsonSerializable
 	public function setOriginal() {
 		foreach ($this->data as $key => $value) {
 			if (is_object($value)) {
-				$value = clone $value;
+				$value = static::clone($value);
 			}
 			$this->original[$key] = $value;
 		}
+	}
+
+	protected static function clone($value) {
+		return clone $value;
 	}
 
 	public function getOriginal(string $field = null) {

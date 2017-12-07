@@ -11,7 +11,7 @@ class MongoModel extends BaseModel
 	public static function castValue(string $cast, $value) {
 		if ($possibleValue = parent::castValue($cast, $value)) {
 			return $possibleValue;
-		} elseif ($cast === 'timestamp') {
+		} elseif (in_array($cast, ['timestamp', 'datetime', 'createdTimestamp', 'updatedTimestamp', 'deletedTimestamp'])) {
 			if ($value instanceof \MongoDB\BSON\UTCDateTime) {
 				return \Carbon\Carbon::instance($value->toDateTime());
 			}
@@ -21,6 +21,13 @@ class MongoModel extends BaseModel
 			}
 			return $value;
 		}
+	}
+
+	protected static function clone($value) {
+		if (is_object($value) && get_class($value) === 'MongoDB\BSON\ObjectId') {
+			return new \MongoDB\BSON\ObjectId((string) $value);
+		}
+		return clone $value;
 	}
 
 	protected static function getTableName() {

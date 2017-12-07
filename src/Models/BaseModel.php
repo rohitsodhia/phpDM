@@ -46,6 +46,7 @@ class BaseModel implements \JsonSerializable
 			$queryBuilder = new $queryBuilder(static::$connection ?: null);
 			$queryBuilder->setHydrate(static::class);
 			$queryBuilder = $queryBuilder->table(static::getTableName())->select(array_keys(static::$fields));
+			$queryBuilder = static::addSoftDeleteWhere($queryBuilder);
 			return call_user_func_array([$queryBuilder, $method], $params);
 		}
 	}
@@ -151,7 +152,7 @@ class BaseModel implements \JsonSerializable
 			return (int) $value;
 		} elseif ($cast === 'float') {
 			return (float) $value;
-		} elseif ($cast === 'string') {
+		} elseif ($cast === 'str' || $cast === 'string') {
 			return (string) $value;
 		} elseif ($cast === 'timestamp' || $cast === 'datetime') {
 			if ($value instanceof \Carbon\Carbon) {
@@ -267,6 +268,18 @@ class BaseModel implements \JsonSerializable
 		if (($key = array_search('updatedTimestamp', static::$fields)) !== false) {
 			$this->data[$key] = $timestamp ?: new \Carbon\Carbon();
 		}
+	}
+
+	public function remove() {
+		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
+		$queryBuilder = new $queryBuilder(static::$connection ?: null);
+		$return = $queryBuilder
+			->table(static::getTableName())
+			->softDelete(array_search('deletedTimestamp', static::$fields))
+			->where(static::$primaryKey, $this->{static::$primaryKey})
+			->limit(1)
+			->delete();
+		return $return ? $queryBuilder->rowCount() : null;
 	}
 
 }

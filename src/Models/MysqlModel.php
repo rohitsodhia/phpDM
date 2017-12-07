@@ -79,12 +79,5 @@ class MysqlModel extends BaseModel
 			}
 		}
 	}
-
-	public function delete() {
-		if (($key = array_search('deletedTimestamp', static::$fields)) !== false) {
-			$return = $this->updateOneOnPrimaryKey([$key => new \Carbon\Carbon()]);
-			return $return ? true : false;
-		}
-	}
 	
 }

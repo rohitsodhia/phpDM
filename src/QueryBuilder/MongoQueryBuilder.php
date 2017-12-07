@@ -150,10 +150,13 @@ class MongoQueryBuilder extends QueryBuilder
 		return $objs;
 	}
 
+
 	protected static function encodeData($data) {
 		foreach ($data as $key => $value) {
 			if (is_object($value) && get_class($value) === 'ArrayObject') {
 				$data[$key] = (array) $value;
+			} elseif (is_object($value) && (get_class($value) === 'DateTime' || get_class($value) === 'Carbon\Carbon')) {
+				$data[$key] = new \MongoDB\BSON\UTCDateTime($value);
 			}
 		}
 		return $data;
@@ -179,6 +182,14 @@ class MongoQueryBuilder extends QueryBuilder
 			}
 		} else {
 			return null;
+		}
+	}
+
+	public function remove() {
+		if ($this->limit === 1) {
+			return $this->connection->{$this->table}->deleteOne($this->conditions);
+		} else {
+			return $this->connection->{$this->table}->deleteMany($this->conditions);
 		}
 	}
 

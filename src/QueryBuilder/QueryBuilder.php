@@ -15,6 +15,7 @@ class QueryBuilder
 	protected $sort = [];
 	protected $limit;
 	protected $skip;
+	protected $softDelete;
 
 	public function __construct(string $connection = null) {
 		try {
@@ -82,6 +83,19 @@ class QueryBuilder
 
 	protected static function encodeData($data) {
 		return $data;
+	}
+
+	public function softDelete(string $field) {
+		$this->softDelete = $field;
+		return $this;
+	}
+
+	public function delete() {
+		if ($this->softDelete) {
+			$this->update([$this->softDelete => new \Carbon\Carbon()]);
+		} else {
+			$this->remove();
+		}
 	}
 	
 }

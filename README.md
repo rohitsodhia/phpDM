@@ -57,10 +57,10 @@ The following field types are available:
 * `int`/`integer`
 * `float`
 * `bool`/`boolean`
-* `string`
+* `str`/`string`
 * `timestamp` - uses Carbon to extend DateTime
 * `array()` - accepts an array of the type within the parenthesis, ex. `array(string)`
-* `object:\Models\User` - accepts a class (with namespace) after the colon, to be used as an embedded object. The class **must** be a phpDM Model of the same type as the model embedding it.
+* `object:\Models\User` - accepts a class (with namespace) after the colon, to be used as an embedded object. The class **must** be a phpDM Model of the same type as the model embedding it. In MySQL, this is converted to JSON on save.
 
 While not strictly necessary, its important to define the primary key:
 ```php
@@ -75,11 +75,39 @@ protected static $table = 'user_admin_roles';
 
 If you prefer to use camel case, you can pass an array with the key of `options` when adding a connection, with a `case` key with the value of 'camel'. phpDM will now use a pluralized version of your model's class name, with a lower-cased first letter.
 
-```
+```php
 'options' => ['case' => 'camel']
 ```
 
 MongoDB models can also use `$collection`.
+
+##### Special types
+
+###### Generic embedded object
+
+If you'd like to embed an object but don't need a full model for it, you can use the verbose type format:
+
+```php
+protected static $fields = [
+	'user' => [
+    	'type' => 'object',
+        'fields' => [
+        	'userId' => 'int',
+            'username' => 'str'
+        ]
+    ]
+];
+```
+
+The inner `fields` element is populated the same as the static `$fields` property. You can have objects embedded within objects.
+
+###### Special timestamps
+
+There are 3 special timestamps included
+
+* `createdTimestamp` - This field is auto-populated with the current timestamp when a model is created.
+* `updatedTimestamp` - This field is auto-populated when the current timestamp when a model is updated
+* `deletedTimestamp` - This field is used for soft deletes and is auto-populated with the current timestamp when a model is deleted
 
 ##### Retriving a single record
 
@@ -188,3 +216,23 @@ $user->save();
 As this will retrieve the entry with the id '1', it will update the email and update the database.
 
 In MySQL, values of type `array` or `object` will be converted to json for storage.
+
+##### Deleting
+
+To delete a query, simply call `delete` on a model.
+
+```
+User::where('userId', 4)->delete()
+```
+
+If the model has a `deletedTimestamp` field, the field will be updated to the current time and the retrival functions (`first`, `find`, and `get`) won't retrieve the model(s). If there is no `deletedTimestamp` field, it will be removed from the database.
+
+##### Empty query
+
+In case you want to start a model query but don't yet have a method to chain, you can call `query`.
+
+```
+$queryBuilder = User::query();
+```
+
+This can be chained to as any other query builder method later.

@@ -20,7 +20,11 @@ class MysqlQueryBuilder extends QueryBuilder
 		if ($comparitor == '==') {
 			$comparitor = '=';
 		}
-		if (in_array($comparitor, ['=', '>', '>=', '<', '<=', '<>', '!='])) {
+		if ($val2 === null && $comparitor === '=') {
+			return "{$val1} IS ?";
+		} elseif ($val2 === null && $comparitor !== '=') {
+			return "{$val1} IS NOT ?";
+		} elseif (in_array($comparitor, ['=', '>', '>=', '<', '<=', '<>', '!='])) {
 			return "{$val1} {$comparitor} ?";
 		}
 	}
@@ -125,7 +129,10 @@ class MysqlQueryBuilder extends QueryBuilder
 			$obj = $hydrateClass::hydrate($iData);
 			$objs[] = $obj;
 		}
-		return $objs;
+		if (count($objs) === 0) {
+			return null;
+		}
+		return $this->limit === 1 ? $objs[0] : $objs;
 	}
 
 	protected static function encodeData($data) {
@@ -159,7 +166,7 @@ class MysqlQueryBuilder extends QueryBuilder
 		return $this->connection->lastInsertId();
 	}
 
-	public function update($data, $multiple = false) {
+	public function update($data) {
 		if ($this->conditions !== []) {
 			$data = static::encodeData($data);
 			$query = "UPDATE {$this->table} SET ";
@@ -185,6 +192,22 @@ class MysqlQueryBuilder extends QueryBuilder
 		} else {
 			return null;
 		}
+	}
+
+	public function remove() {
+		$query = "DELETE FROM {$this->table}";
+		if (count($this->conditions)) {
+			$query .= ' WHERE ' . implode(' AND ', $this->conditions);
+		}
+		if ($this->limit) {
+			if ($this->skip) {
+				$query .= ' LIMIT ' . $this->skip . ', ' . $this->limit;
+			} else {
+				$query .= ' LIMIT ' . $this->limit;
+			}
+		}
+		$this->statement = $this->connection->prepare($query);
+		return $this->statement->execute($this->params);
 	}
 
 }

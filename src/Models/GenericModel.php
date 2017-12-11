@@ -5,13 +5,19 @@ namespace phpDM\Models;
 class GenericModel
 {
 
-	private $parent;
-	private $fields = [];
-	private $data = [];
-	private $original = [];
-	private $changed = [];
+	protected $parent;
+	protected $fields = [];
+	protected $data = [];
+	protected $original = [];
+	protected $changed = [];
 
-	public function __construct(string $parent, array $fields) {
+	public function __construct(string $parent = null, array $fields = null) {
+		if (strlen($this->parent) && count($this->fields)) {
+			return;
+		}
+		if (!strlen($parent) || !count($fields)) {
+			throw new \Exception('Undefined GenericModel');
+		}
 		$this->parent = $parent;
 		$this->fields = $fields;
 	}
@@ -71,9 +77,13 @@ class GenericModel
 		$this->changed = [];
 	}
 
-	public static function hydrate(string $parent, array $options, array $data) {
+	public static function hydrate(array $data, string $parent = null, array $options = null) {
 		$class = static::class;
-		$obj = new $class($parent, $options);
+		if ($class === 'phpDM\Models\GenericModel') {
+			$obj = new $class($parent, $options);
+		} else {
+			$obj = new $class();
+		}
 		foreach ($data as $key => $value) {
 			$obj->$key = $value;
 		}
@@ -89,14 +99,33 @@ class GenericModel
 				continue;
 			}
 			$cast = $this->parent::getCast($options);
-			if (substr($cast, 0, 6) !== 'object') {
+			if (is_string($cast)) {
 				$data[$field] = $this->data[$field];
-			} elseif (is_object($this->data[$field])) {
-				$cData = $this->data[$field]->getFields();
-				if (count($cData)) {
-					$data[$field] = $cData;
+			} elseif ($cast[0] === 'array') {
+				$data[$field] = $this->getArray($cast, (array) $this->data[$field]);
+			} elseif ($cast[0] === 'object') {
+				if (is_object($this->data[$field])) {
+					$cData = $this->data[$field]->getFields();
+					if (count($cData)) {
+						$data[$field] = $cData;
+					}
 				}
 			}
+		}
+		return $data;
+	}
+
+	protected function getArray(array $cast, array $fieldValue) {
+		$partsCast = $this->parent::getCast($cast[1]);
+		if (is_string($partsCast)) {
+			$data = $fieldValue;
+		} elseif ($partsCast[0] === 'object') {
+			$data = [];
+			foreach ($fieldValue as $object) {
+				$data[] = $object->getFields();
+			}
+		} elseif ($partsCast[0] === 'array') {
+			$data = $this->getArray($partsCast, $fieldValue);
 		}
 		return $data;
 	}
@@ -108,12 +137,12 @@ class GenericModel
 				continue;
 			}
 			$cast = $this->parent::getCast($options);
-			if (substr($cast, 0, 5) === 'array' && is_object($this->data[$field]) && get_class($this->data[$field]) === 'ArrayObject') {
+			if (is_array($cast) && $cast[0] === 'array' && is_object($this->data[$field]) && get_class($this->data[$field]) === 'ArrayObject') {
 				$original = $this->getOriginal($field);
 				if (json_encode($this->data[$field]) !== json_encode($original)) {
 					$changedData[$field] = $this->data[$field];
 				}
-			} elseif (substr($cast, 0, 6) !== 'object') {
+			} elseif (is_string($cast)) {
 				if (in_array($field, $this->changed)) {
 					$changedData[$field] = $this->data[$field];
 				}

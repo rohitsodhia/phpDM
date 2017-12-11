@@ -80,7 +80,8 @@ class MongoModel extends BaseModel
 		if (!$this->new && $this->data[static::$primaryKey]) {
 			$curTime = new \Carbon\Carbon();
 			$this->addTimestamps($curTime);
-			$changedData = $this->getChangedFields();
+			$changedData = $this->getFields();
+			exit;
 			$queryBuilder = new $queryBuilder(static::$connection ?: null);
 			$return = $queryBuilder
 				->collection(static::getCollectionName())

@@ -95,21 +95,33 @@ class BaseModel implements \JsonSerializable
 		}
 	}
 
-	protected static function getCast($cast) {
-		if (gettype($cast) === 'string') {
-			return $cast;
-		} elseif (isset($cast['type']) && gettype($cast['type']) === 'string') {
-			return $cast['type'];
+	public static function getCast($cast) {
+		if (gettype($cast) === 'array' && isset($cast['type']) && gettype($cast['type']) === 'string') {
+			$cast = $cast['type'];
 		}
-		return null;
+		if (substr($cast, 0, 5) === 'array') {
+			preg_match('/array\((.+?)\)/', $cast, $match);
+			$match[1] = str_replace(' ', '', $match[1]);
+			$casts = preg_split('/[,]+/', $match[1]);
+			if (count($casts) === 0) {
+				throw new Exception('Invalid cast');
+			}
+			$cast = array_merge(['array'], $casts);
+		} elseif ($cast === 'object') {
+			$cast = ['object', 'GenericModel'];
+		} elseif (substr($cast, 0, 7) === 'object:') {
+			$parts = explode(':', $cast);
+			$cast = ['object', $parts[1]];
+		}
+		return $cast;
 	}
 
 	public static function parseValue($value, $options) {
 		$cast = static::getCast($options);
-		
-		if ($castValue = static::castValue($cast, $value)) {
-			return $castValue;
-		} elseif (preg_match('/array\((.+?)\)/', $cast, $match)) {
+
+		if (is_string($cast)) {
+			return static::castValue($cast, $value);
+		} elseif ($cast[0] === 'array') {
 			if (gettype($value) === 'string' && $decoded = json_decode($value)) {
 				if (gettype($decoded) === 'array') {
 					$value = new \ArrayObject($decoded);
@@ -121,19 +133,15 @@ class BaseModel implements \JsonSerializable
 			} elseif (!is_object($value) && get_class($value) !== 'ArrayOjbect') {
 				return new \ArrayObject();
 			}
-			$casts = preg_split('/\W+/', $match[1]);
-			if (count($casts) === 0) {
-				throw new Exception('Invalid cast');
-			}
 			foreach ($value as $key => $sValue) {
-				$value[$key] = static::castValue($casts[0], $sValue);
+				$value[$key] = static::parseValue($sValue, $cast[1]);
 			}
 			return $value;
-		} elseif ($cast === 'object' || substr($cast, 0, 7) === 'object:') {
-			if ($cast === 'object') {
-				$cleanObj = GenericModel::hydrate(static::class, $options['fields'], (array) $value);
+		} elseif ($cast[0] === 'object') {
+			if ($cast[1] === 'GenericModel') {
+				$cleanObj = GenericModel::hydrate((array) $value, static::class, $options['fields']);
 			} else {
-				$class = substr($cast, 7);
+				$class = $cast[1];
 				// if (!isset($options['type'])) {
 				// 	throw new \Exception('No type defined: ' . $key);
 				// }
@@ -210,16 +218,18 @@ class BaseModel implements \JsonSerializable
 		return $obj;
 	}
 
-	public function getFields($pure = false) {
+	public function getFields() {
 		$data = [];
 		foreach (static::$fields as $field => $options) {
 			if (!isset($this->data[$field])) {
 				continue;
 			}
 			$cast = static::getCast($options);
-			if (substr($cast, 0, 6) !== 'object') {
+			if (is_string($cast)) {
 				$data[$field] = $this->data[$field];
-			} else {
+			} elseif ($cast[0] === 'array') {
+				$data[$field] = $this->getArray($cast, (array) $this->data[$field]);
+			} elseif ($cast[0] === 'object') {
 				if (is_object($this->data[$field])) {
 					$cData = $this->data[$field]->getFields();
 					if (count($cData)) {
@@ -227,9 +237,21 @@ class BaseModel implements \JsonSerializable
 					}
 				}
 			}
-			if ($pure && is_object($data[$field]) && get_class($data[$field]) === 'ArrayObject') {
-				$data[$field] = (array) $data[$field];
+		}
+		return $data;
+	}
+
+	protected function getArray(array $cast, array $fieldValue) {
+		$partsCast = static::getCast($cast[1]);
+		if (is_string($partsCast)) {
+			$data = $fieldValue;
+		} elseif ($partsCast[0] === 'object') {
+			$data = [];
+			foreach ($fieldValue as $object) {
+				$data[] = $object->getFields();
 			}
+		} elseif ($partsCast[0] === 'array') {
+			$data = $this->getArray($partsCast, $fieldValue);
 		}
 		return $data;
 	}
@@ -241,28 +263,25 @@ class BaseModel implements \JsonSerializable
 				continue;
 			}
 			$cast = static::getCast($options);
-			if (substr($cast, 0, 5) === 'array' && is_object($this->data[$field]) && get_class($this->data[$field]) === 'ArrayObject') {
-				$original = $this->getOriginal($field);
-				if (json_encode($this->data[$field]) !== json_encode($original)) {
-					$changedData[$field] = $this->data[$field];
-				}
-			} elseif (substr($cast, 0, 6) !== 'object') {
+			if (is_string($cast)) {
 				if (in_array($field, $this->changed)) {
 					$changedData[$field] = $this->data[$field];
+				}
+			} elseif (is_array($cast) && $cast[0] === 'array' && is_object($this->data[$field]) && get_class($this->data[$field]) === 'ArrayObject') {
+				$original = $this->getArray($cast, (array) $this->getOriginal($field));
+				$current = $this->getArray($cast, (array) $this->data[$field]);
+				if (json_encode($current) !== json_encode($original)) {
+					$changedData[$field] = $current;
 				}
 			} else {
 				if (in_array($field, $this->changed) && !is_object($this->data[$field])) {
 					$changedData[$field] = null;
 				} elseif (!in_array($field, $this->changed) && is_object($this->data[$field])) {
-					// $data = $this->data[$field]->getChangedFields();
 					$data = $this->data[$field]->getFields();
 					if (count($data) && $data !== $this->getOriginal($field)->getFields()) {
 						$changedData[$field] = $data;
 					}
 				}
-			}
-			if ($pure && is_object($changedData[$field]) && get_class($changedData[$field]) === 'ArrayObject') {
-				$changedData[$field] = (array) $changedData[$field];
 			}
 		}
 		return $changedData;

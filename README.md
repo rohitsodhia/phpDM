@@ -60,7 +60,7 @@ The following field types are available:
 * `str`/`string`
 * `timestamp` - uses Carbon to extend DateTime
 * `array()` - accepts an array of the type within the parenthesis, ex. `array(string)`
-* `object:\Models\User` - accepts a class (with namespace) after the colon, to be used as an embedded object. The class **must** be a phpDM Model of the same type as the model embedding it. In MySQL, this is converted to JSON on save.
+* `object:\Models\User` - accepts a class (with namespace) after the colon, to be used as an embedded object. If you're looking to embed objects that are only being used to model that embedded data, you should use the `GenericModel` class. If you intend on using the class independently, the class **must** be a phpDM Model of the same type as the model embedding it. In MySQL, this is converted to JSON on save.
 
 While not strictly necessary, its important to define the primary key:
 ```php
@@ -100,6 +100,8 @@ protected static $fields = [
 ```
 
 The inner `fields` element is populated the same as the static `$fields` property. You can have objects embedded within objects.
+
+If you'd prefer to keep the object separate or create an array of objects, you can create a model extending from `GenericModel`. It functions the same as a model created through the verbose format shown above.
 
 ###### Special timestamps
 

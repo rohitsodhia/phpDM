@@ -9,16 +9,20 @@ class ConnectionFactory
 	private static $queryBuilders = [];
 
 	public static function init() {
-		self::registerConnection('mongo', [
-			'interface' => Interfaces\MongoConnectionInterface::class,
-			'queryBuilder' => \phpDM\QueryBuilder\MongoQueryBuilder::class,
-			'model' => \phpDM\Models\MongoModel::class
-		]);
-		self::registerConnection('mysql', [
-			'interface' => Interfaces\MysqlConnectionInterface::class,
-			'queryBuilder' => \phpDM\QueryBuilder\MysqlQueryBuilder::class,
-			'model' => \phpDM\Models\MysqlModel::class
-		]);
+		if (class_exists('\MongoClient')) {
+			self::registerConnection('mongo', [
+				'interface' => Interfaces\MongoConnectionInterface::class,
+				'queryBuilder' => \phpDM\QueryBuilder\MongoQueryBuilder::class,
+				'model' => \phpDM\Models\MongoModel::class
+			]);
+		}
+		if (class_exists('\PDO')) {
+			self::registerConnection('mysql', [
+				'interface' => Interfaces\MysqlConnectionInterface::class,
+				'queryBuilder' => \phpDM\QueryBuilder\MysqlQueryBuilder::class,
+				'model' => \phpDM\Models\MysqlModel::class
+			]);
+		}
 	}
 
 	public static function registerConnection(string $type, array $config) {

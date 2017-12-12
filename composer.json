@@ -4,8 +4,10 @@
 	"keywords": ["orm", "odm", "mysql", "mongo"],
 	"type": "package",
 	"require": {
-		"mongodb/mongodb": "^1.2",
 		"nesbot/Carbon": "^1.22"
+	},
+	"suggest": {
+		"mongodb/mongodb": "Required to use this package with Mongo DB (version ^1.2)"
 	},
 	"license": "GNU General",
 	"authors": [{

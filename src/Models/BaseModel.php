@@ -63,11 +63,11 @@ class BaseModel implements \JsonSerializable
 			if (method_exists($this, $accessor)) {
 				$value = $this->{$accessor}($value);
 			}
-		} elseif ($this->fields[$key] === 'object'  || substr($this->fields[$key], 0, 7) === 'object:') {
-			if ($this->fields[$key] === 'object') {
-				$value = new GenericModel(static::class, $this->fields[$key]['fields']);
+		} elseif (isset($this->key) && ($this->$key === 'object'  || substr($this->$key, 0, 7) === 'object:')) {
+			if ($this->$key === 'object') {
+				$value = new GenericModel(static::class, $this->$key['fields']);
 			} else {
-				$class = substr($this->fields[$key], 7);
+				$class = substr($this->$key, 7);
 				if (!class_exists($class)) {
 					throw new Exception('Field not an object');
 				}
@@ -312,6 +312,7 @@ class BaseModel implements \JsonSerializable
 
 	public static function query() {
 		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
+		$queryBuilder = new $queryBuilder(static::$connection ?: null);
 		$queryBuilder->setHydrate(static::class);
 		$queryBuilder = $queryBuilder->table(static::getTableName())->select(array_keys(static::$fields));
 		return $queryBuilder;

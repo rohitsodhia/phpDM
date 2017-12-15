@@ -82,7 +82,7 @@ class MysqlQueryBuilder extends QueryBuilder
 	public function sort($field, $direction = 'asc') {
 		$direction = strtoupper($direction);
 		if ($direction === 'ASC' || $direction === 'DESC') {
-			$this->sort[] = $field . ' ' . $direction;
+			$this->sort[] = '`' . $field . '` ' . $direction;
 		}
 		return $this;
 	}
@@ -94,7 +94,7 @@ class MysqlQueryBuilder extends QueryBuilder
 	public function buildSelectQuery() {
 		$query = 'SELECT ';
 		if (count($this->select)) {
-			$query .= implode(', ', $this->select);
+			$query .= '`' . implode('`, `', $this->select) . '`';
 		} else {
 			$query .= '*';
 		}

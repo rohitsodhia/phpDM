@@ -33,7 +33,7 @@ class MongoQueryBuilder extends QueryBuilder
 
 	public function where() {
 		$args = func_get_args();
-		if (is_callable($args[0])) {
+		if (!is_string($args[0]) && is_callable($args[0])) {
 			$queryBuilder = static::class;
 			$subquery = new $queryBuilder();
 			$args[0]($subquery);

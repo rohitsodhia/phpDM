@@ -2,6 +2,8 @@
 
 namespace phpDM\Connections;
 
+use \Exception;
+
 class ConnectionFactory
 {
 
@@ -38,7 +40,7 @@ class ConnectionFactory
 		if (isset(self::$connectionInterfaces[$type])) {
 			return self::$connectionInterfaces[$type];
 		} else {
-			throw Exception('Invalid connection');
+			throw new Exception('Invalid connection');
 		}
 	}
 
@@ -50,7 +52,7 @@ class ConnectionFactory
 		if (isset(self::$queryBuilders[$type])) {
 			return self::$queryBuilders[$type];
 		} else {
-			throw Exception('Invalid query builder');
+			throw new Exception('Invalid query builder');
 		}
 	}
 

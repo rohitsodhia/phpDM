@@ -11,7 +11,7 @@ class ConnectionFactory
 	private static $queryBuilders = [];
 
 	public static function init() {
-		if (class_exists('\MongoClient')) {
+		if (class_exists('\MongoDB\Client')) {
 			self::registerConnection('mongo', [
 				'interface' => Interfaces\MongoConnectionInterface::class,
 				'queryBuilder' => \phpDM\QueryBuilder\MongoQueryBuilder::class,

@@ -84,9 +84,10 @@ class BaseModel implements \JsonSerializable
 			return null;
 			// throw new \Exception('Invalid field: ' . $key);
 		}
-		$accessor = 'set' . \phpDM\Helpers::toCamelCase($key, true);
-		if (method_exists($this, $accessor)) {
-			$value = $this->{$accessor}($value);
+		$setter = 'set' . \phpDM\Helpers::toCamelCase($key, true);
+		if (method_exists($this, $setter)) {
+			$this->{$setter}($value);
+			$value = $this->data[$key];
 		}
 		$value = static::parseValue($value, static::$fields[$key]);
 		$this->data[$key] = $value;

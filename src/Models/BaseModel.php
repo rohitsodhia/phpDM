@@ -9,6 +9,7 @@ class BaseModel implements \JsonSerializable
 	public static $connection;
 	protected $table;
 	protected $new = true;
+	protected $hydrating = false;
 	static protected $primaryKey;
 	static protected $timestampFormat = 'Y-m-d H:i:s';
 	static protected $fields = [];
@@ -84,10 +85,12 @@ class BaseModel implements \JsonSerializable
 			return null;
 			// throw new \Exception('Invalid field: ' . $key);
 		}
-		$setter = 'set' . \phpDM\Helpers::toCamelCase($key, true);
-		if (method_exists($this, $setter)) {
-			$this->{$setter}($value);
-			$value = $this->data[$key];
+		if (!$this->hydrating) {
+			$accessor = 'set' . \phpDM\Helpers::toCamelCase($key, true);
+			if (method_exists($this, $accessor)) {
+				$this->{$accessor}($value);
+				$value = $this->data[$key];
+			}
 		}
 		$value = static::parseValue($value, static::$fields[$key]);
 		$this->data[$key] = $value;
@@ -202,17 +205,23 @@ class BaseModel implements \JsonSerializable
 		$this->changed = [];
 	}
 
+	public function setHydrating(bool $state) {
+		$this->hydrating = $state;
+	}
+
 	public static function hydrate($data) {
 		if ($data === null) {
 			return null;
 		}
 		$class = static::class;
 		$obj = new $class();
+		$obj->setHydrating(true);
 		if (count($data)) {
 			foreach ($data as $key => $value) {
 				$obj->$key = $value;
 			}
 		}
+		$obj->setHydrating(false);
 		$obj->setOriginal();
 		$obj->resetChanged();
 		$obj->setNew(false);

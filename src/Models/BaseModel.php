@@ -41,10 +41,15 @@ class BaseModel implements \JsonSerializable
 		return $table;
 	}
 
-	public static function __callStatic($method, $params) {
+	public static function getQueryBuilder() {
 		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
+		$queryBuilder = new $queryBuilder(static::$connection ?: null);
+		return $queryBuilder;
+	}
+
+	public static function __callStatic($method, $params) {
+		$queryBuilder = static::getQueryBuilder();
 		if (method_exists($queryBuilder, $method)) {
-			$queryBuilder = new $queryBuilder(static::$connection ?: null);
 			$queryBuilder->setHydrate(static::class);
 			$queryBuilder = $queryBuilder->table(static::getTableName())->select(array_keys(static::$fields));
 			$queryBuilder = static::addSoftDeleteWhere($queryBuilder);
@@ -299,7 +304,7 @@ class BaseModel implements \JsonSerializable
 
 	protected function addTimestamps(\Carbon\Carbon $timestamp = null) {
 		if (($key = array_search('createdTimestamp', static::$fields)) !== false) {
-			if ($this->data[$key] === null) {
+			if (!isset($this->data[$key]) || $this->data[$key] === null) {
 				$this->data[$key] = $timestamp ?: new \Carbon\Carbon();
 			}
 		}
@@ -309,8 +314,7 @@ class BaseModel implements \JsonSerializable
 	}
 
 	public function remove() {
-		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
-		$queryBuilder = new $queryBuilder(static::$connection ?: null);
+		$queryBuilder = static::getQueryBuilder();
 		$return = $queryBuilder
 			->table(static::getTableName())
 			->softDelete(array_search('deletedTimestamp', static::$fields))
@@ -321,8 +325,7 @@ class BaseModel implements \JsonSerializable
 	}
 
 	public static function query() {
-		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
-		$queryBuilder = new $queryBuilder(static::$connection ?: null);
+		$queryBuilder = static::getQueryBuilder();
 		$queryBuilder->setHydrate(static::class);
 		$queryBuilder = $queryBuilder->table(static::getTableName())->select(array_keys(static::$fields));
 		return $queryBuilder;

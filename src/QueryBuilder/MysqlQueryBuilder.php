@@ -121,7 +121,7 @@ class MysqlQueryBuilder extends QueryBuilder
 		$pQuery->execute($this->params);
 		$data = $pQuery->fetchAll();
 		if ($this->hydrate === null) {
-			return $data;
+			return $this->limit === 1 ? $data[0] : $data;
 		}
 		$objs = [];
 		$hydrateClass = $this->hydrate;

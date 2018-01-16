@@ -9,6 +9,7 @@ class BaseModel implements \JsonSerializable
 	public static $connection;
 	protected $table;
 	protected $new = true;
+	protected $hydrating = false;
 	static protected $primaryKey;
 	static protected $timestampFormat = 'Y-m-d H:i:s';
 	static protected $fields = [];
@@ -40,10 +41,15 @@ class BaseModel implements \JsonSerializable
 		return $table;
 	}
 
-	public static function __callStatic($method, $params) {
+	public static function getQueryBuilder() {
 		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
+		$queryBuilder = new $queryBuilder(static::$connection ?: null);
+		return $queryBuilder;
+	}
+
+	public static function __callStatic($method, $params) {
+		$queryBuilder = static::getQueryBuilder();
 		if (method_exists($queryBuilder, $method)) {
-			$queryBuilder = new $queryBuilder(static::$connection ?: null);
 			$queryBuilder->setHydrate(static::class);
 			$queryBuilder = $queryBuilder->table(static::getTableName())->select(array_keys(static::$fields));
 			$queryBuilder = static::addSoftDeleteWhere($queryBuilder);
@@ -84,9 +90,12 @@ class BaseModel implements \JsonSerializable
 			return null;
 			// throw new \Exception('Invalid field: ' . $key);
 		}
-		$accessor = 'set' . \phpDM\Helpers::toCamelCase($key, true);
-		if (method_exists($this, $accessor)) {
-			$value = $this->{$accessor}($value);
+		if (!$this->hydrating) {
+			$accessor = 'set' . \phpDM\Helpers::toCamelCase($key, true);
+			if (method_exists($this, $accessor)) {
+				$this->{$accessor}($value);
+				$value = $this->data[$key];
+			}
 		}
 		$value = static::parseValue($value, static::$fields[$key]);
 		$this->data[$key] = $value;
@@ -201,17 +210,23 @@ class BaseModel implements \JsonSerializable
 		$this->changed = [];
 	}
 
+	public function setHydrating(bool $state) {
+		$this->hydrating = $state;
+	}
+
 	public static function hydrate($data) {
 		if ($data === null) {
 			return null;
 		}
 		$class = static::class;
 		$obj = new $class();
+		$obj->setHydrating(true);
 		if (count($data)) {
 			foreach ($data as $key => $value) {
 				$obj->$key = $value;
 			}
 		}
+		$obj->setHydrating(false);
 		$obj->setOriginal();
 		$obj->resetChanged();
 		$obj->setNew(false);
@@ -289,7 +304,7 @@ class BaseModel implements \JsonSerializable
 
 	protected function addTimestamps(\Carbon\Carbon $timestamp = null) {
 		if (($key = array_search('createdTimestamp', static::$fields)) !== false) {
-			if ($this->data[$key] === null) {
+			if (!isset($this->data[$key]) || $this->data[$key] === null) {
 				$this->data[$key] = $timestamp ?: new \Carbon\Carbon();
 			}
 		}
@@ -299,8 +314,7 @@ class BaseModel implements \JsonSerializable
 	}
 
 	public function remove() {
-		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
-		$queryBuilder = new $queryBuilder(static::$connection ?: null);
+		$queryBuilder = static::getQueryBuilder();
 		$return = $queryBuilder
 			->table(static::getTableName())
 			->softDelete(array_search('deletedTimestamp', static::$fields))
@@ -311,8 +325,7 @@ class BaseModel implements \JsonSerializable
 	}
 
 	public static function query() {
-		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
-		$queryBuilder = new $queryBuilder(static::$connection ?: null);
+		$queryBuilder = static::getQueryBuilder();
 		$queryBuilder->setHydrate(static::class);
 		$queryBuilder = $queryBuilder->table(static::getTableName())->select(array_keys(static::$fields));
 		return $queryBuilder;

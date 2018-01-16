@@ -66,7 +66,7 @@ class MysqlModel extends BaseModel
 			$this->addTimestamps($curTime);
 			$changedData = $this->getChangedFields();
 			$return = $this->updateOneOnPrimaryKey($changedData);
-			return $return ? $queryBuilder->rowCount() : null;
+			return $return;
 		} elseif ($this->new) {
 			$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
 			$this->addTimestamps($curTime);

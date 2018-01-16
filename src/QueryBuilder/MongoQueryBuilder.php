@@ -174,7 +174,6 @@ class MongoQueryBuilder extends QueryBuilder
 
 	public function update($data, $multiple = false) {
 		$data = static::encodeData($data);
-		var_dump($data); exit;
 		if ($this->conditions !== []) {
 			if (!$multiple) {
 				return $this->connection->{$this->table}->updateOne($this->conditions, ['$set' => $data]);

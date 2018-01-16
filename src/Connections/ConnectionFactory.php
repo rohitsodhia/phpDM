@@ -2,6 +2,7 @@
 
 namespace phpDM\Connections;
 
+use \Exception;
 use phpDM\QueryBuilder\{
 	MongoQueryBuilder, MysqlQueryBuilder, QueryBuilder
 };
@@ -31,7 +32,7 @@ class ConnectionFactory
 	 * Registers connection details depending on installed packages
 	 */
 	public static function init() {
-		if (class_exists('\MongoClient')) {
+		if (class_exists('\MongoDB\Client')) {
 			self::registerConnection('mongo', [
 				'interface' => Interfaces\MongoConnectionInterface::class,
 				'queryBuilder' => MongoQueryBuilder::class,
@@ -73,7 +74,7 @@ class ConnectionFactory
 		if (isset(self::$connectionInterfaces[$type])) {
 			return self::$connectionInterfaces[$type];
 		} else {
-			throw new \Exception('Invalid connection');
+			throw new Exception('Invalid connection:' . $type);
 		}
 	}
 
@@ -93,7 +94,7 @@ class ConnectionFactory
 		if (isset(self::$queryBuilders[$type])) {
 			return self::$queryBuilders[$type];
 		} else {
-			throw new \Exception('Invalid query builder');
+			throw new Exception('Invalid query builder');
 		}
 	}
 

@@ -81,6 +81,11 @@ class QueryBuilder
 		return $this;
 	}
 
+	public function first() {
+		$this->limit = 1;
+		return $this->get();
+	}
+
 	protected static function encodeData($data) {
 		return $data;
 	}

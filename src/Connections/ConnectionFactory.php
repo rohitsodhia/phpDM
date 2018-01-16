@@ -9,7 +9,7 @@ class ConnectionFactory
 	private static $queryBuilders = [];
 
 	public static function init() {
-		if (class_exists('\MongoClient')) {
+		if (class_exists('\MongoDB\Client')) {
 			self::registerConnection('mongo', [
 				'interface' => Interfaces\MongoConnectionInterface::class,
 				'queryBuilder' => \phpDM\QueryBuilder\MongoQueryBuilder::class,
@@ -38,7 +38,7 @@ class ConnectionFactory
 		if (isset(self::$connectionInterfaces[$type])) {
 			return self::$connectionInterfaces[$type];
 		} else {
-			throw Exception('Invalid connection');
+			throw new \Exception('Invalid connection:' . $type);
 		}
 	}
 
@@ -50,7 +50,7 @@ class ConnectionFactory
 		if (isset(self::$queryBuilders[$type])) {
 			return self::$queryBuilders[$type];
 		} else {
-			throw Exception('Invalid query builder');
+			throw new \Exception('Invalid query builder');
 		}
 	}
 

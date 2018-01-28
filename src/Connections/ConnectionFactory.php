@@ -87,10 +87,10 @@ class ConnectionFactory
 
 	/**
 	 * @param string $type Query Builder type
-	 * @return QueryBuilder
+	 * @return string
 	 * @throws \Exception
 	 */
-	public static function getQueryBuilder(string $type): QueryBuilder {
+	public static function getQueryBuilder(string $type): string {
 		if (isset(self::$queryBuilders[$type])) {
 			return self::$queryBuilders[$type];
 		} else {

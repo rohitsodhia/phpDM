@@ -9,7 +9,7 @@
 	"suggest": {
 		"mongodb/mongodb": "Required to use this package with Mongo DB (version ^1.2)"
 	},
-	"license": "GNU General",
+	"license": "GPL-3.0-only",
 	"authors": [{
 		"name": "Rohit Sodhia", 
 		"email": "sodhia.rohit@gmail.com"

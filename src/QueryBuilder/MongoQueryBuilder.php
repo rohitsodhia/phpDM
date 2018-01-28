@@ -150,6 +150,10 @@ class MongoQueryBuilder extends QueryBuilder
 		return $objs;
 	}
 
+	public function count() {
+		$options = $this->buildOptions();
+		return $this->connection->{$this->table}->count($this->conditions, $options);
+	}
 
 	protected static function encodeData($data) {
 		foreach ($data as $key => $value) {

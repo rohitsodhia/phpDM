@@ -1,5 +1,9 @@
 # phpDM
 
+phpDM is a model-first ORM/ODM. Currently supporting MySQL and MongoDB out of the box, it draws heavily from [Laravel](https://laravel.com/)'s Eloquent.
+
+Unlike Eloquent most other ORMs/ODMs, phpDM starts with creating a model class representing a table and it's fields. Definitions are attached to each field, and every time a model is retrieved or saved, data is validated against those types. This means it's focused around your code, and allows you to switch databases with ease. You're not organizing for MySQL columns or Mongo fields, you're setting up PHP data, and phpDM interfaces with your database appropriately.
+
 #### Basic usage
 
 This project currently supports MySQL and MongoDB.

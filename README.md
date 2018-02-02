@@ -4,7 +4,7 @@ phpDM is a model-first ORM/ODM. Currently supporting MySQL and MongoDB out of th
 
 Unlike Eloquent most other ORMs/ODMs, phpDM starts with creating a model class representing a table and it's fields. Definitions are attached to each field, and every time a model is retrieved or saved, data is validated against those types. This means it's focused around your code, and allows you to switch databases with ease. You're not organizing for MySQL columns or Mongo fields, you're setting up PHP data, and phpDM interfaces with your database appropriately.
 
-#### Basic usage
+## Basic usage
 
 This project currently supports MySQL and MongoDB.
 
@@ -85,9 +85,9 @@ If you prefer to use camel case, you can pass an array with the key of `options`
 
 MongoDB models can also use `$collection`.
 
-##### Special types
+## Special types
 
-###### Generic embedded object
+### Generic embedded object
 
 If you'd like to embed an object but don't need a full model for it, you can use the verbose type format:
 
@@ -107,7 +107,7 @@ The inner `fields` element is populated the same as the static `$fields` propert
 
 If you'd prefer to keep the object separate or create an array of objects, you can create a model extending from `GenericModel`. It functions the same as a model created through the verbose format shown above.
 
-###### Special timestamps
+### Special timestamps
 
 There are 3 special timestamps included
 
@@ -115,7 +115,7 @@ There are 3 special timestamps included
 * `updatedTimestamp` - This field is auto-populated when the current timestamp when a model is updated
 * `deletedTimestamp` - This field is used for soft deletes and is auto-populated with the current timestamp when a model is deleted
 
-##### Retriving a single record
+## Retriving a single record
 
 The `find` method will retrieve a single record of a model, using the defined primary key.
 
@@ -125,7 +125,7 @@ User::find(1)
 
 This will retrieve the values where the primary key is equal to `1` and populate and return a `User` object.
 
-##### Retriving multiple records
+## Retriving multiple records
 
 To get back multiple results, use the `get` method.
 
@@ -135,7 +135,7 @@ User::get()
 
 This will return populated `User` objects of all entries in the `users` table.
 
-##### Conditions
+## Conditions
 
 You can add conditions with the  `where`, `orWhere`, or `whereIn` methods.
 
@@ -173,7 +173,7 @@ Any query builder methods started staticly off a model return a query builder in
 User::where('username', 'rohit')->orWhere('active', '!=', 0)->get()
 ```
 
-##### Sorting
+## Sorting
 
 To add sorting, simply chain the `sort` function onto the Query Builder. The first parameter is the field to sort on, the second is the direction to sort on (`asc` for ascending or `desc` for descending). The default direction is ascending.
 
@@ -183,7 +183,7 @@ sort('registeredOn', 'desc');
 
 To sort on multiple fields, chain multile sort functions together.
 
-##### Limiting
+## Limiting
 
 To retrieve a limited number of rows, you can use the `limit` method, simply passing it an integer greater than zero. You can also skip entries using `skip`, passing it an integer greater than zero.
 
@@ -201,7 +201,7 @@ paginate(20, 2)
 
 will retrieve entries 20-39.
 
-##### Saving data
+## Saving data
 
 Whether creating a new database entry or updating an existing row, use the `save` method. Called on an instance of a model, it will check for any data that has been changed and save that data to the database. If there is no primary key, it will attempt to insert a new entry; if there is a primary key, it will attempt to update an entry. If the databse allows it, it will return the number of affected rows on success, or `false` on failure.
 
@@ -223,7 +223,7 @@ As this will retrieve the entry with the id '1', it will update the email and up
 
 In MySQL, values of type `array` or `object` will be converted to json for storage.
 
-##### Deleting
+## Deleting
 
 To delete a query, simply call `delete` on a model.
 
@@ -233,7 +233,7 @@ User::where('userId', 4)->delete()
 
 If the model has a `deletedTimestamp` field, the field will be updated to the current time and the retrival functions (`first`, `find`, and `get`) won't retrieve the model(s). If there is no `deletedTimestamp` field, it will be removed from the database.
 
-##### Empty query
+## Empty query
 
 In case you want to start a model query but don't yet have a method to chain, you can call `query`.
 

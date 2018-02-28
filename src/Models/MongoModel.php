@@ -9,7 +9,7 @@ class MongoModel extends BaseModel
 	static protected $primaryKey = '_id';
 
 	public static function castValue(string $cast, $value) {
-		if ($possibleValue = parent::castValue($cast, $value)) {
+		if (($possibleValue = parent::castValue($cast, $value)) !== null) {
 			return $possibleValue;
 		} elseif (in_array($cast, ['timestamp', 'datetime', 'createdTimestamp', 'updatedTimestamp', 'deletedTimestamp'])) {
 			if ($value instanceof \MongoDB\BSON\UTCDateTime) {

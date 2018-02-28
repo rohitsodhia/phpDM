@@ -9,7 +9,7 @@ class MysqlModel extends BaseModel
 	static protected $primaryKey = 'id';
 
 	public static function castValue(string $cast, $value) {
-		if ($possibleValue = parent::castValue($cast, $value)) {
+		if (($possibleValue = parent::castValue($cast, $value)) !== null) {
 			return $possibleValue;
 		}
 	}

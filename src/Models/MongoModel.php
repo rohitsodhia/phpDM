@@ -81,7 +81,6 @@ class MongoModel extends BaseModel
 			$curTime = new \Carbon\Carbon();
 			$this->addTimestamps($curTime);
 			$changedData = $this->getFields();
-			exit;
 			$queryBuilder = new $queryBuilder(static::$connection ?: null);
 			$return = $queryBuilder
 				->collection(static::getCollectionName())

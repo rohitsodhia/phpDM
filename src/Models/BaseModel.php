@@ -176,8 +176,10 @@ class BaseModel implements \JsonSerializable
 				return $value;
 			} elseif ($value instanceof \DateTime) {
 				return \Carbon\Carbon::instance($value->toDateTime());
-			} elseif (in_array(gettype($value), ['integer', 'string'])) {
+			} elseif (gettype($value) === 'string') {
 				return new \Carbon\Carbon($value);
+			} elseif (gettype($value) === 'integer') {
+				return \Carbon\Carbon::createFromTimestamp($value);
 			}
 		}
 	}

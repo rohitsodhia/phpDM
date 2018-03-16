@@ -45,7 +45,7 @@ class MongoQueryBuilder extends QueryBuilder
 		}
 		if ($conditions) {
 			if (count($this->conditions)) {
-				$this->conditions = [$this->conditions, $conditions];
+				$this->conditions = array_merge($this->conditions, $conditions);
 			} else {
 				$this->conditions = $conditions;
 			}
@@ -67,7 +67,7 @@ class MongoQueryBuilder extends QueryBuilder
 		}
 		if ($conditions) {
 			if (isset($this->conditions['$or'])) {
-				$this->conditions['$or'][] = $conditions;
+				$this->conditions['$or'] = array_merge($this->conditions['$or'], $conditions);
 			} else {
 				$this->conditions = ['$or' => [$this->conditions, $conditions]];
 			}

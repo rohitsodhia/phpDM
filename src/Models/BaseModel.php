@@ -2,6 +2,8 @@
 
 namespace phpDM\Models;
 
+use phpDM\QueryBuilder\MongoQueryBuilder;
+
 class BaseModel implements \JsonSerializable
 {
 
@@ -41,9 +43,10 @@ class BaseModel implements \JsonSerializable
 		return $table;
 	}
 
-	public static function getQueryBuilder() {
+	public static function getQueryBuilder(): MongoQueryBuilder {
 		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
 		$queryBuilder = new $queryBuilder(static::$connection ?: null);
+		$queryBuilder->table(static::getTableName())->setHydrate(static::class);
 		return $queryBuilder;
 	}
 

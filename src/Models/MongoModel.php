@@ -66,6 +66,9 @@ class MongoModel extends BaseModel
 			return null;
 		}
 		$primaryKey = static::$primaryKey;
+		if (static::$fields[$primaryKey] === 'mongoId' && gettype($id) === 'string') {
+			$id = new \MongoDB\BSON\ObjectId($id);
+		}
 		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
 		$queryBuilder = new $queryBuilder(static::$connection ?: null);
 		$queryBuilder->setHydrate(static::class);

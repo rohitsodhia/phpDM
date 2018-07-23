@@ -2,7 +2,7 @@
 
 namespace phpDM\Connections\Interfaces;
 
-class MysqlConnectionInterface extends ConnectionInterface
+class MysqlConnectionAdapter extends ConnectionInterface
 {
 	
 	public static function createConnection(array $config = []) {

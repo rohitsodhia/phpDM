@@ -2,7 +2,7 @@
 
 namespace phpDM\Connections\Interfaces;
 
-class MongoConnectionInterface extends ConnectionInterface
+class MongoConnectionAdapter extends ConnectionInterface
 {
 
 	public static function createConnection(array $config = []) {

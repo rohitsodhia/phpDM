@@ -19,9 +19,9 @@ class ConnectionFactory
 {
 
 	/**
-	 * @var array List of added interfaces
+	 * @var array List of added adapters
 	 */
-	private static $connectionInterfaces = [];
+	private static $connectionAdapters = [];
 
 	/**
 	 * @var array List of added query builders
@@ -34,35 +34,43 @@ class ConnectionFactory
 	public static function init() {
 		if (class_exists('\MongoDB\Client')) {
 			self::registerConnection('mongo', [
-				'interface' => Interfaces\MongoConnectionInterface::class,
+				'adapter' => Adapters\MongoConnectionAdapter::class,
 				'queryBuilder' => MongoQueryBuilder::class,
 				'model' => MongoModel::class
 			]);
 		}
 		if (class_exists('\PDO')) {
 			self::registerConnection('mysql', [
-				'interface' => Interfaces\MysqlConnectionInterface::class,
+				'adapter' => Adapters\MysqlConnectionAdapter::class,
 				'queryBuilder' => MysqlQueryBuilder::class,
 				'model' => MysqlModel::class
+			]);
+		}
+
+		if (class_exists('\Redis')) {
+			self::registerConnection('redis', [
+				'adapter' => Adapters\RedisConnectionAdapter::class,
 			]);
 		}
 	}
 
 	/**
-	 * Registers a connection, 
+	 * Registers a connection
 	 * @param string $type
 	 * @param array $config
 	 */
 	public static function registerConnection(string $type, array $config) {
-		self::$connectionInterfaces[$type] = $config['interface'];
-		self::$queryBuilders[$type] = $config['queryBuilder'];
+		self::$connectionAdapters[$type] = $config['adapter'];
+		if (key_exists('queryBuilder', $config)) {
+			self::$queryBuilders[$type] = $config['queryBuilder'];
+		}
 	}
 
 	/**
 	 * @return array
 	 */
-	public static function getConnectionInterfaces(): array {
-		return self::$connectionInterfaces;
+	public static function getConnectionAdapters(): array {
+		return self::$connectionAdapters;
 	}
 
 	/**
@@ -70,9 +78,9 @@ class ConnectionFactory
 	 * @return string
 	 * @throws \Exception
 	 */
-	public static function getConnectionInterface(string $type): string {
-		if (isset(self::$connectionInterfaces[$type])) {
-			return self::$connectionInterfaces[$type];
+	public static function getConnectionAdapter(string $type): string {
+		if (isset(self::$connectionAdapters[$type])) {
+			return self::$connectionAdapters[$type];
 		} else {
 			throw new Exception('Invalid connection:' . $type);
 		}

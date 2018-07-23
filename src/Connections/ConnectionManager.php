@@ -2,38 +2,56 @@
 
 namespace phpDM\Connections;
 
+use phpDM\Connections\Adapters\ConnectionInterface;
+
 class ConnectionManager
 {
 
+	/**
+	 * @var array List of connections
+	 */
 	private static $connections = [];
+
+	/**
+	 * @var array Map of connection names to type
+	 */
 	private static $connectionNameTypeMap = [];
 
-	public static function addConnection($config, string $name = null) {
-		if (count(ConnectionFactory::getConnectionInterfaces()) === 0) {
+	/**
+	 * @param string $type Connection type
+	 * @param $config array Array containing connection details
+	 * @param string|null $name Optional name for multiple connections of the same type
+	 */
+	public static function addConnection(string $type, $config, string $name = null) {
+		if (count(ConnectionFactory::getConnectionAdapters()) === 0) {
 			ConnectionFactory::init();
 		}
-		$interface = ConnectionFactory::getConnectionInterface($config['type']);
-		$interface = new $interface($config);
+		try {
+			$adapter = ConnectionFactory::getConnectionAdapter($type);
+		} catch (\Exception $e) {
+			return;
+		}
+		$adapter = new $adapter($config);
 		if (!$name) {
-			self::$connections[$config['type']][] = $interface;
+			self::$connections[$type][] = $adapter;
 		} else {
-			self::$connections[$config['type']][$name] = $interface;
-			self::$connectionNameTypeMap[$name] = $config['type'];
+			self::$connections[$type][$name] = $adapter;
+			self::$connectionNameTypeMap[$name] = $type;
 		}
 	}
 
-	public static function getConnection(string $name = null, string $type = null) {
-		if ($name !== null) {
-			return self::$connections[self::$connectionNameTypeMap[$name]][$name];
-		} elseif ($type !== null) {
-			return self::getConnectionByType($type);
-		} else {
-			return null;
+	/**
+	 * @param string $type Connection type
+	 * @param string|null $name Connection name
+	 * @return ConnectionInterface|null
+	 */
+	public static function getConnection(string $type, ?string $name) {
+		if ($name !== null && strlen($name)) {
+			return key_exists($name, self::$connectionNameTypeMap) ? self::$connections[self::$connectionNameTypeMap[$name]][$name] : null;
+		} elseif (key_exists($type, self::$connections)) {
+			return array_values(self::$connections[$type])[0];
 		}
-	}
-
-	public static function getConnectionByType(string $type) {
-		return array_values(self::$connections[$type])[0];
+		return null;
 	}
 
 }

@@ -2,11 +2,11 @@
 
 namespace phpDM\QueryBuilder;
 
-class QueryBuilder
+abstract class QueryBuilder
 {
 
 	protected static $type;
-	protected $interface;
+	protected $adapter;
 	protected $connection;
 	protected $hydrate;
 	protected $table;
@@ -17,14 +17,13 @@ class QueryBuilder
 	protected $skip;
 	protected $softDelete;
 
-	public function __construct(string $connection = null) {
-		try {
-			$this->interface = \phpDM\Connections\ConnectionManager::getConnection($connection);
-			if (!$this->interface) {
-				$this->interface = \phpDM\Connections\ConnectionManager::getConnectionByType(static::$type);
-			}
-			$this->connection = $this->interface->getConnection();
-		} catch (\Exception $e) { }
+	public function __construct(string $connection = '') {
+		$this->adapter = \phpDM\Connections\ConnectionManager::getConnection(static::$type, $connection);
+		if ($this->adapter) {
+			$this->connection = $this->adapter->getConnection();
+		} else {
+			throw new \Exception('No connection');
+		}
 	}
 
 	public function setHydrate(string $class) {
@@ -85,6 +84,8 @@ class QueryBuilder
 		$this->limit = 1;
 		return $this->get();
 	}
+
+	abstract public function get();
 
 	protected static function encodeData($data) {
 		return $data;

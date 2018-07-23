@@ -2,13 +2,16 @@
 
 namespace phpDM\Models;
 
+use phpDM\Connections\ConnectionFactory;
+
 class MongoModel extends BaseModel
 {
 
 	public static $type = 'mongo';
 	static protected $primaryKey = '_id';
 
-	public static function castValue(string $cast, $value) {
+	public static function castValue(string $cast, $value)
+	{
 		if (($possibleValue = parent::castValue($cast, $value)) !== null) {
 			return $possibleValue;
 		} elseif (in_array($cast, ['timestamp', 'datetime', 'createdTimestamp', 'updatedTimestamp', 'deletedTimestamp'])) {
@@ -18,50 +21,74 @@ class MongoModel extends BaseModel
 		} elseif ($cast === 'mongoId') {
 			if (is_string($value)) {
 				$value = new \MongoDB\BSON\ObjectId($value);
+			} elseif (get_class($value) === 'stdClass' && strlen($value->{'$oid'})) {
+				$value = new \MongoDB\BSON\ObjectId($value->{'$oid'});
+			} elseif (get_class($value) !== 'MongoDB\BSON\ObjectId') {
+				throw new \Exception('No valid id');
 			}
 			return $value;
 		}
 	}
 
-	protected static function clone($value) {
+	protected static function clone($value)
+	{
 		if (is_object($value) && get_class($value) === 'MongoDB\BSON\ObjectId') {
 			return new \MongoDB\BSON\ObjectId((string) $value);
 		}
 		return clone $value;
 	}
 
-	protected static function getTableName() {
+	public function getPrimaryKey()
+	{
+		return $this->data['_id'];
+	}
+
+	public static function getTableName()
+	{
 		if (isset(static::$collection)) {
 			return static::$collection;
 		}
 		return parent::getTableName();
 	}
 
-	protected static function getCollectionName() {
+	protected static function getCollectionName()
+	{
 		return static::getTableName();
 	}
 
-	public static function addSoftDeleteWhere($queryBuilder) {
+	public static function addSoftDeleteWhere($queryBuilder)
+	{
 		if (($key = array_search('deletedTimestamp', static::$fields)) !== false) {
 			$queryBuilder->where($key, null);
 		}
 		return $queryBuilder;
 	}
 
-	public static function first() {
-		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
-		$queryBuilder = new $queryBuilder(static::$connection ?: null);
-		$queryBuilder->setHydrate(static::class);
+	public static function first()
+	{
+		try {
+			$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
+		} catch (\Exception $e) {
+			die('No query builder found');
+		}
+
+		$queryBuilder = new $queryBuilder(static::$connection ?: '');
 		$queryBuilder = static::addSoftDeleteWhere($queryBuilder);
 		$return = $queryBuilder
 			->table(static::getTableName())
-			->select(array_keys(static::$fields))
-			->limit(1)
-			->get();
+			->select(array_keys(static::$fields));
+		if (isset($first)) {
+			$return = $return->where('_id', $first->_id);
+		} else {
+			$return = $return->limit(1);
+		}
+		$return = $return->get();
+
 		return $return;
 	}
 
-	public static function find($id) {
+	public static function find($id)
+	{
 		if (!isset(static::$primaryKey)) {
 			return null;
 		}
@@ -70,7 +97,7 @@ class MongoModel extends BaseModel
 			$id = new \MongoDB\BSON\ObjectId($id);
 		}
 		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
-		$queryBuilder = new $queryBuilder(static::$connection ?: null);
+		$queryBuilder = new $queryBuilder(static::$connection ?: '');
 		$queryBuilder->setHydrate(static::class);
 		$queryBuilder = $queryBuilder->table(static::getTableName())->select(array_keys(static::$fields));
 		$queryBuilder = static::addSoftDeleteWhere($queryBuilder);
@@ -78,7 +105,8 @@ class MongoModel extends BaseModel
 		return $result;
 	}
 
-	public function save() {
+	public function save()
+	{
 		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
 		if (!$this->new && $this->data[static::$primaryKey]) {
 			$curTime = new \Carbon\Carbon();

@@ -1,6 +1,6 @@
 <?php
 
-namespace phpDM\Connections\Interfaces;
+namespace phpDM\Connections\Adapters;
 
 class MongoConnectionAdapter extends ConnectionInterface
 {

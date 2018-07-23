@@ -1,10 +1,10 @@
 <?php
 
-namespace phpDM\Connections\Interfaces;
+namespace phpDM\Connections\Adapters;
 
 /**
  * An abstract class to build database and cache connections off of
- * @package phpDM\Connections\Interfaces
+ * @package phpDM\Connections\Adapters
  */
 abstract class ConnectionInterface
 {
@@ -17,7 +17,17 @@ abstract class ConnectionInterface
 	/**
 	 * @var array Options for connection
 	 */
-	protected $options;
+	protected $options = [];
+
+	/**
+	 * @var array Valid options
+	 */
+	protected static $validOptions = [];
+
+	/**
+	 * @var array Default options
+	 */
+	protected static $defaultOptions = [];
 
 	/**
 	 * ConnectionInterface constructor.
@@ -50,6 +60,13 @@ abstract class ConnectionInterface
 	 * @param array $options Connection options
 	 */
 	public function setOptions(array $options) {
+		$defaults = static::$defaultOptions;
+		$options = array_merge($defaults, $options);
+		foreach (array_keys($options) as $key) {
+			if (array_search($key, static::$validOptions) === false) {
+				unset($options[$key]);
+			}
+		}
 		$this->options = $options;
 	}
 
@@ -59,7 +76,15 @@ abstract class ConnectionInterface
 	 * @return mixed Connection option
 	 */
 	public function getOption(string $option) {
-		return $this->options[$option];
+		return key_exists($option, $this->options) ? $this->options[$option] : null;
+	}
+
+	/**
+	 * Get connection options
+	 * @return array Connection options
+	 */
+	public function getOptions() {
+		return $this->options;
 	}
 
 }

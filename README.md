@@ -93,10 +93,10 @@ If you'd like to embed an object but don't need a full model for it, you can use
 
 ```php
 protected static $fields = [
-	'user' => [
-    	'type' => 'object',
+    'user' => [
+        'type' => 'object',
         'fields' => [
-        	'userId' => 'int',
+            'userId' => 'int',
             'username' => 'str'
         ]
     ]

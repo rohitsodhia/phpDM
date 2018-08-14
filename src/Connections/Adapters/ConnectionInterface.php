@@ -20,9 +20,22 @@ abstract class ConnectionInterface
 	protected $options = [];
 
 	/**
+	 * @var array Valid system options
+	 */
+	protected static $globalValidOptions = [
+		'case'
+	];
+
+	/**
 	 * @var array Valid options
 	 */
 	protected static $validOptions = [];
+
+	/**
+	 * @var array Default system options
+	 */
+	protected static $globalDefaultOptions = [
+	];
 
 	/**
 	 * @var array Default options
@@ -60,10 +73,11 @@ abstract class ConnectionInterface
 	 * @param array $options Connection options
 	 */
 	public function setOptions(array $options) {
-		$defaults = static::$defaultOptions;
+		$defaults = array_merge(static::$globalDefaultOptions, static::$defaultOptions);
+		$validOptions = array_merge(static::$globalValidOptions, static::$validOptions);
 		$options = array_merge($defaults, $options);
 		foreach (array_keys($options) as $key) {
-			if (array_search($key, static::$validOptions) === false) {
+			if (array_search($key, $validOptions) === false) {
 				unset($options[$key]);
 			}
 		}

@@ -4,12 +4,12 @@ namespace phpDM\Models;
 
 use phpDM\QueryBuilder\QueryBuilder;
 
-class BaseModel implements \JsonSerializable
+abstract class BaseModel implements \JsonSerializable
 {
 
 	public static $type;
 	public static $connection;
-	protected $table;
+	protected static $table;
 	protected $new = true;
 	protected $hydrating = false;
 	static protected $primaryKey;
@@ -19,21 +19,41 @@ class BaseModel implements \JsonSerializable
 	protected $original = [];
 	protected $changed = [];
 
-	public function __construct() {
+	public function __construct($data = null) {
+		if ($data) {
+			foreach ($data as $field => $value) {
+				if (array_key_exists($field, static::$fields)) {
+					$this->$field = $value;
+				}
+			}
+			$this->original = $this->data;
+			$this->resetChanged();
+		}
+	}
+
+	public function __sleep() {
+		return ['data'];
+	}
+
+	public function __wakeup() {
+		$this->original = $this->data;
 	}
 
 	public function jsonSerialize() {
 		return $this->getFields(true);
 	}
 
-	protected static function getTableName() {
+	public static function getTableName() {
 		if (isset(static::$table)) {
 			return static::$table;
 		}
 
 		$table = @end(explode('\\', get_called_class()));
 		$table = \phpDM\Inflect::pluralize($table);
-		$connection = \phpDM\Connections\ConnectionManager::getConnection(static::$connection, static::$type);
+		$connection = \phpDM\Connections\ConnectionManager::getConnection(static::$type, static::$connection);
+		if (!$connection) {
+			throw new \Exception('No connection');
+		}
 		$case = $connection->getOption('case');
 		if ($case === 'camel') {
 			$table = lcfirst($table);
@@ -45,7 +65,7 @@ class BaseModel implements \JsonSerializable
 
 	public static function getQueryBuilder(): QueryBuilder {
 		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
-		$queryBuilder = new $queryBuilder(static::$connection ?: null);
+		$queryBuilder = new $queryBuilder(static::$connection ?: '');
 		$queryBuilder->table(static::getTableName())->setHydrate(static::class);
 		return $queryBuilder;
 	}
@@ -241,7 +261,7 @@ class BaseModel implements \JsonSerializable
 	public function getFields() {
 		$data = [];
 		foreach (static::$fields as $field => $options) {
-			if (!isset($this->data[$field])) {
+			if (!array_key_exists($field, $this->data)) {
 				continue;
 			}
 			$cast = static::getCast($options);

@@ -225,10 +225,10 @@ In MySQL, values of type `array` or `object` will be converted to json for stora
 
 ## Deleting
 
-To delete a query, simply call `delete` on a model.
+To delete a query, simply call `remove` on a model.
 
 ```
-User::where('userId', 4)->delete()
+User::where('userId', 4)->remove()
 ```
 
 If the model has a `deletedTimestamp` field, the field will be updated to the current time and the retrival functions (`first`, `find`, and `get`) won't retrieve the model(s). If there is no `deletedTimestamp` field, it will be removed from the database.

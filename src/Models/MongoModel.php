@@ -23,7 +23,7 @@ class MongoModel extends BaseModel
 				$value = new \MongoDB\BSON\ObjectId($value);
 			} elseif (get_class($value) === 'stdClass' && strlen($value->{'$oid'})) {
 				$value = new \MongoDB\BSON\ObjectId($value->{'$oid'});
-			} elseif (get_class($value) !== 'MongoDB\BSON\ObjectId') {
+			} elseif ($value !== null && get_class($value) !== 'MongoDB\BSON\ObjectId') {
 				throw new \Exception('No valid id');
 			}
 			return $value;

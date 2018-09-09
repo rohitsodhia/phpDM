@@ -186,7 +186,9 @@ abstract class BaseModel implements \JsonSerializable
 	}
 
 	public static function castValue(string $cast, $value) {
-		if ($cast === 'bool' || $cast === 'boolean') {
+		if ($value === null) {
+			return null;
+		} elseif ($cast === 'bool' || $cast === 'boolean') {
 			return (bool) $value;
 		} elseif ($cast === 'int' || $cast === 'integer') {
 			return (int) $value;

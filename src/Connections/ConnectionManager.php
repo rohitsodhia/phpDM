@@ -45,7 +45,7 @@ class ConnectionManager
 	 * @param string|null $name Connection name
 	 * @return ConnectionInterface|null
 	 */
-	public static function getConnection(string $type, ?string $name) {
+	public static function getConnection(string $type, string $name = null) {
 		if ($name !== null && strlen($name)) {
 			return key_exists($name, self::$connectionNameTypeMap) ? self::$connections[self::$connectionNameTypeMap[$name]][$name] : null;
 		} elseif (key_exists($type, self::$connections)) {

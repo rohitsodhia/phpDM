@@ -40,7 +40,7 @@ abstract class BaseModel implements \JsonSerializable
 	}
 
 	public function jsonSerialize() {
-		return $this->getFields(true);
+		return $this->getData(true);
 	}
 
 	public static function getTableName() {
@@ -260,12 +260,12 @@ abstract class BaseModel implements \JsonSerializable
 		return $obj;
 	}
 
-	public function getFields() {
+	public function getData() {
 		$data = [];
 		foreach (static::$fields as $field => $options) {
-			if (!array_key_exists($field, $this->data)) {
-				continue;
-			}
+//			if (!array_key_exists($field, $this->data)) {
+//				continue;
+//			}
 			$cast = static::getCast($options);
 			if (is_string($cast)) {
 				$data[$field] = $this->data[$field];
@@ -273,7 +273,7 @@ abstract class BaseModel implements \JsonSerializable
 				$data[$field] = $this->getArray($cast, (array) $this->data[$field]);
 			} elseif ($cast[0] === 'object') {
 				if (is_object($this->data[$field])) {
-					$cData = $this->data[$field]->getFields();
+					$cData = $this->data[$field]->getData();
 					if (count($cData)) {
 						$data[$field] = $cData;
 					}
@@ -290,7 +290,7 @@ abstract class BaseModel implements \JsonSerializable
 		} elseif ($partsCast[0] === 'object') {
 			$data = [];
 			foreach ($fieldValue as $object) {
-				$data[] = $object->getFields();
+				$data[] = $object->getData();
 			}
 		} elseif ($partsCast[0] === 'array') {
 			$data = $this->getArray($partsCast, $fieldValue);
@@ -319,8 +319,8 @@ abstract class BaseModel implements \JsonSerializable
 				if (in_array($field, $this->changed) && !is_object($this->data[$field])) {
 					$changedData[$field] = null;
 				} elseif (!in_array($field, $this->changed) && is_object($this->data[$field])) {
-					$data = $this->data[$field]->getFields();
-					if (count($data) && $data !== $this->getOriginal($field)->getFields()) {
+					$data = $this->data[$field]->getData();
+					if (count($data) && $data !== $this->getOriginal($field)->getData()) {
 						$changedData[$field] = $data;
 					}
 				}

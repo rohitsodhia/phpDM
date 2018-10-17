@@ -92,7 +92,7 @@ class GenericModel
 		return $obj;
 	}
 
-	public function getFields() {
+	public function getData() {
 		$data = [];
 		foreach ($this->fields as $field => $options) {
 			if (!isset($this->data[$field])) {
@@ -105,7 +105,7 @@ class GenericModel
 				$data[$field] = $this->getArray($cast, (array) $this->data[$field]);
 			} elseif ($cast[0] === 'object') {
 				if (is_object($this->data[$field])) {
-					$cData = $this->data[$field]->getFields();
+					$cData = $this->data[$field]->getData();
 					if (count($cData)) {
 						$data[$field] = $cData;
 					}
@@ -122,7 +122,7 @@ class GenericModel
 		} elseif ($partsCast[0] === 'object') {
 			$data = [];
 			foreach ($fieldValue as $object) {
-				$data[] = $object->getFields();
+				$data[] = $object->getData();
 			}
 		} elseif ($partsCast[0] === 'array') {
 			$data = $this->getArray($partsCast, $fieldValue);
@@ -151,8 +151,8 @@ class GenericModel
 					$changedData[$field] = null;
 				} elseif (!in_array($field, $this->changed) && is_object($this->data[$field])) {
 					// $data = $this->data[$field]->getChangedFields();
-					$data = $this->data[$field]->getFields();
-					if (count($data) && $data !== $this->getOriginal($field)->getFields()) {
+					$data = $this->data[$field]->getData();
+					if (count($data) && $data !== $this->getOriginal($field)->getData()) {
 						$changedData[$field] = $data;
 					}
 				}

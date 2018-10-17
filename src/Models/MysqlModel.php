@@ -70,7 +70,7 @@ class MysqlModel extends BaseModel
 		} elseif ($this->new) {
 			$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
 			$this->addTimestamps($curTime);
-			$data = $this->getFields();
+			$data = $this->getData();
 			$queryBuilder = new $queryBuilder(static::$connection ?: null);
 			$success = $queryBuilder->table(static::getTableName())->insert($data);
 			if ($success !== false) {

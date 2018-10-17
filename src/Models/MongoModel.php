@@ -111,7 +111,7 @@ class MongoModel extends BaseModel
 		if (!$this->new && $this->data[static::$primaryKey]) {
 			$curTime = new \Carbon\Carbon();
 			$this->addTimestamps($curTime);
-			$changedData = $this->getFields();
+			$changedData = $this->getData();
 			$queryBuilder = new $queryBuilder(static::$connection ?: null);
 			$return = $queryBuilder
 				->collection(static::getCollectionName())
@@ -129,7 +129,7 @@ class MongoModel extends BaseModel
 			}
 			$curTime = new \Carbon\Carbon();
 			$this->addTimestamps($curTime);
-			$data = $this->getFields();
+			$data = $this->getData();
 			$queryBuilder = new $queryBuilder(static::$connection ?: null);
 			$success = $queryBuilder->collection(static::getCollectionName())->insert($data);
 			if ($success !== false) {

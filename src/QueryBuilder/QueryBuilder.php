@@ -17,7 +17,7 @@ abstract class QueryBuilder
 	protected $skip;
 	protected $softDelete;
 
-	public function __construct(?string $connection) {
+	public function __construct(string $connection = null) {
 		$this->adapter = \phpDM\Connections\ConnectionManager::getConnection(static::$type, $connection);
 		if ($this->adapter) {
 			$this->connection = $this->adapter->getConnection();

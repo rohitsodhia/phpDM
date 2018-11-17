@@ -46,12 +46,6 @@ class ConnectionFactory
 				'model' => MysqlModel::class
 			]);
 		}
-
-		if (class_exists('\Redis')) {
-			self::registerConnection('redis', [
-				'adapter' => Adapters\RedisConnectionAdapter::class,
-			]);
-		}
 	}
 
 	/**

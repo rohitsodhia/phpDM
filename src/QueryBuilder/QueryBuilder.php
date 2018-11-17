@@ -98,9 +98,9 @@ abstract class QueryBuilder
 
 	public function delete() {
 		if ($this->softDelete) {
-			$this->update([$this->softDelete => new \Carbon\Carbon()]);
+			return $this->update([$this->softDelete => new \Carbon\Carbon()]);
 		} else {
-			$this->remove();
+			return $this->remove();
 		}
 	}
 	

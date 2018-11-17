@@ -112,22 +112,44 @@ class MongoQueryBuilder extends QueryBuilder
 		return $options;
 	}
 
-	public function first() {
-		$options = $this->buildOptions();
-		$data = $this->connection->{$this->table}->findOne($this->conditions, $options);
-		if (!$data) {
-			return $data;
-		}
-		if ($this->hydrate === null) {
-			return $data;
-		}
-		$hydrateClass = $this->hydrate;
-		$obj = $hydrateClass::hydrate($data);
-		return $obj;
-	}
-
 	public function get() {
 		$options = $this->buildOptions();
+		if ($this->hydrate) {
+			$hydrateClass = $this->hydrate;
+			if ($cacheAdapter = $hydrateClass::getCacheAdapter()) {
+				$options_getId = $options;
+				$options_getId['projection'] = ['_id' => 1];
+				if ($this->limit === 1) {
+					unset($options_getId['limit']);
+					$rIds = $this->connection->{$this->table}->findOne($this->conditions, $options_getId);
+					$ids = [$rIds->_id];
+				} else {
+					$rIds = $this->connection->{$this->table}->find($this->conditions, $options_getId);
+					$ids = [];
+					foreach ($rIds as $rId) {
+						$ids[] = $rId->_id;
+					}
+				}
+			}
+			if (count($ids) === 1) {
+				$objs = $cacheAdapter->getModel($hydrateClass, $ids[0]);
+			} elseif (count($ids)) {
+				$objs = $cacheAdapter->getModels($hydrateClass, $ids);
+			}
+			foreach ($objs as $obj) {
+				unset($ids[array_search($obj->_id, $ids)]);
+			}
+			if (count($ids) === 0) {
+				$cacheAdapter->storeModels($objs);
+				return $objs;
+			}
+			if (count($ids) === 1) {
+				$this->conditions['_id'] = $ids[0];
+				$this->limit = 1;
+			} else {
+				$this->conditions = ['_id' => ['$in' => array_values($ids)]];
+			}
+		}
 		if ($this->limit === 1) {
 			unset($options['limit']);
 			$data = $this->connection->{$this->table}->findOne($this->conditions, $options);
@@ -137,15 +159,22 @@ class MongoQueryBuilder extends QueryBuilder
 		if ($this->hydrate === null) {
 			return $data;
 		}
-		$objs = [];
-		$hydrateClass = $this->hydrate;
-		if ($this->limit === 1) {
+		if (!isset($objs)) {
+			$objs = [];
+		}
+		if ($this->limit === 1 && count($objs) === 0) {
 			$obj = $hydrateClass::hydrate($data);
+			if ($cacheAdapter) {
+				$cacheAdapter->storeModels($obj);
+			}
 			return $obj;
 		}
 		foreach ($data as $iData) {
 			$obj = $hydrateClass::hydrate($iData);
 			$objs[] = $obj;
+		}
+		if ($cacheAdapter && count($objs)) {
+			$cacheAdapter->storeModels($objs);
 		}
 		return $objs;
 	}

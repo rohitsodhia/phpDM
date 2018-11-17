@@ -2,6 +2,7 @@
 
 namespace phpDM\Models;
 
+use function phpDM\is_countable;
 use phpDM\QueryBuilder\QueryBuilder;
 
 abstract class BaseModel implements \JsonSerializable
@@ -9,6 +10,8 @@ abstract class BaseModel implements \JsonSerializable
 
 	public static $type;
 	public static $connection;
+	protected static $cache;
+	protected static $cacheAdapter;
 	protected static $table;
 	protected $new = true;
 	protected $hydrating = false;
@@ -70,7 +73,21 @@ abstract class BaseModel implements \JsonSerializable
 		return $queryBuilder;
 	}
 
-	public static function __callStatic($method, $params): QueryBuilder {
+	public static function getCacheAdapter() {
+		if (static::$cache && static::$cacheAdapter === null) {
+			try {
+				$cacheAdapter = \phpDM\CacheAdapters\CacheFactory::getCacheAdapter(static::$cache['type'], key_exists('name', static::$cache) ? static::$cache['name'] : null);
+				if (isset(static::$cache['options'])) {
+					$cacheAdapter->setOptions(static::$cache['options']);
+				}
+				static::$cacheAdapter = $cacheAdapter;
+			} catch (\Exception $e) {}
+		}
+
+		return static::$cacheAdapter;
+	}
+
+	public static function __callStatic($method, $params) {
 		$queryBuilder = static::getQueryBuilder();
 		if (method_exists($queryBuilder, $method)) {
 			$queryBuilder->setHydrate(static::class);
@@ -185,6 +202,43 @@ abstract class BaseModel implements \JsonSerializable
 		return $value;
 	}
 
+	public static function compactValue($value, $options) {
+		$cast = static::getCast($options);
+
+		if (is_string($cast)) {
+			return static::simplifyValue($cast, $value);
+		} elseif ($cast[0] === 'array') {
+			if (gettype($value) === 'string' && $decoded = json_decode($value)) {
+				if (gettype($decoded) === 'array') {
+					$value = new \ArrayObject($decoded);
+				} else {
+					return new \ArrayObject();
+				}
+			} elseif (gettype($value) === 'array') {
+				$value = new \ArrayObject($value);
+			} elseif (!is_object($value) && get_class($value) !== 'ArrayOjbect') {
+				return new \ArrayObject();
+			}
+			foreach ($value as $key => $sValue) {
+				$value[$key] = static::parseValue($sValue, $cast[1]);
+			}
+			return $value;
+		} elseif ($cast[0] === 'object') {
+			if ($cast[1] === 'GenericModel') {
+				$cleanObj = GenericModel::hydrate((array) $value, static::class, $options['fields']);
+			} else {
+				$class = $cast[1];
+				// if (!isset($options['type'])) {
+				// 	throw new \Exception('No type defined: ' . $key);
+				// }
+				$cleanObj = $class::hydrate((array) $value);
+			}
+			return $cleanObj;
+		}
+
+		return $value;
+	}
+
 	public static function castValue(string $cast, $value) {
 		if ($value === null) {
 			return null;
@@ -208,6 +262,16 @@ abstract class BaseModel implements \JsonSerializable
 			}
 		}
 	}
+
+	public static function simplifyValue(string $cast, $value) {
+		if (in_array($cast, ['bool', 'boolean', 'int', 'integer', 'float', 'str', 'string'])) {
+			return $value;
+		} elseif (in_array($cast, ['timestamp', 'datetime', 'createdTimestamp', 'updatedTimestamp', 'deletedTimestamp'])) {
+			return $value->toIso8601String();
+		}
+	}
+
+	abstract public function getPrimaryKey();
 
 	public function setNew(bool $new) {
 		$this->new = $new;
@@ -248,7 +312,7 @@ abstract class BaseModel implements \JsonSerializable
 		$class = static::class;
 		$obj = new $class();
 		$obj->setHydrating(true);
-		if (count($data)) {
+		if (is_countable($data) && count($data)) {
 			foreach ($data as $key => $value) {
 				$obj->$key = $value;
 			}
@@ -327,6 +391,11 @@ abstract class BaseModel implements \JsonSerializable
 			}
 		}
 		return $changedData;
+	}
+
+	public function compress() {
+		$obj = new \stdClass();
+		foreach ($this->)
 	}
 
 	protected function addTimestamps(\Carbon\Carbon $timestamp = null) {

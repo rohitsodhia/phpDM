@@ -30,6 +30,15 @@ class MongoModel extends BaseModel
 		}
 	}
 
+	public static function simplifyValue(string $cast, $value)
+	{
+		if (($possibleValue = parent::castValue($cast, $value)) !== null) {
+			return $possibleValue;
+		} elseif ($cast === 'mongoId') {
+			return (string) $value;
+		}
+	}
+
 	protected static function clone($value)
 	{
 		if (is_object($value) && get_class($value) === 'MongoDB\BSON\ObjectId') {
@@ -74,6 +83,22 @@ class MongoModel extends BaseModel
 
 		$queryBuilder = new $queryBuilder(static::$connection ?: '');
 		$queryBuilder = static::addSoftDeleteWhere($queryBuilder);
+
+//		if (self::getCacheAdapter()) {
+//			$first = $queryBuilder
+//				->table(static::getTableName())
+//				->select(static::$primaryKey)
+//				->limit(1)
+//				->get();
+//			if ($first) {
+//				$model = self::getCacheAdapter()->getModel(static::class, $first->_id);
+//				if ($model) {
+//					return $model;
+//				}
+//			}
+//		}
+
+		$queryBuilder->setHydrate(static::class);
 		$return = $queryBuilder
 			->table(static::getTableName())
 			->select(array_keys(static::$fields));
@@ -83,6 +108,10 @@ class MongoModel extends BaseModel
 			$return = $return->limit(1);
 		}
 		$return = $return->get();
+
+		if (self::getCacheAdapter()) {
+			self::getCacheAdapter()->storeModel($return);
+		}
 
 		return $return;
 	}

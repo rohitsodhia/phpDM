@@ -2,9 +2,18 @@
 
 namespace phpDM\Connections\Adapters;
 
+/**
+ * Connection adapter for MySQL
+ * @package phpDM\Connections\Adapters
+ */
 class MysqlConnectionAdapter extends ConnectionInterface
 {
-	
+
+	/**
+	 * Creates a MongoDB connection
+	 * @param array $config Connection configs
+	 * @return mixed
+	 */
 	public static function createConnection(array $config = []) {
 		$config = array_merge([
 			

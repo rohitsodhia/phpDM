@@ -48,21 +48,13 @@ abstract class QueryBuilder
 		return $this;
 	}
 	
-	public function where() {
-		return $this;
-	}
+	abstract public function where();
 
-	public function orWhere() {
-		return $this;
-	}
+	abstract public function orWhere();
 
-	public function whereIn(string $field, array $values) {
-		return $this;
-	}
+	abstract public function whereIn(string $field, array $values);
 
-	public function sort($field, $direction = 'asc') {
-		return $this;
-	}
+	abstract public function sort($field, $direction = 'asc');
 
 	public function limit(int $limit) {
 		$this->limit = $limit;

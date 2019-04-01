@@ -4,7 +4,7 @@
 	"keywords": ["orm", "odm", "mysql", "mongo"],
 	"type": "package",
 	"require": {
-		"nesbot/Carbon": "^1.22"
+		"nesbot/carbon": "^2.16"
 	},
 	"suggest": {
 		"mongodb/mongodb": "Required to use this package with Mongo DB (version ^1.2)"
@@ -22,7 +22,7 @@
 	"version": "0.1.0",
 	"minimum-stability": "dev",
 	"require-dev": {
-		"phpunit/phpunit": "^7",
-		"phpstan/phpstan": "^0.10.5"
+		"phpunit/phpunit": "^8.0",
+		"phpstan/phpstan": "^0.11"
 	}
 }

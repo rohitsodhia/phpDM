@@ -76,7 +76,7 @@ class ConnectionFactory
 		if (isset(self::$connectionAdapters[$type])) {
 			return self::$connectionAdapters[$type];
 		} else {
-			throw new Exception('Invalid connection:' . $type);
+			throw new Exception('Invalid connection type:' . $type);
 		}
 	}
 

@@ -29,7 +29,7 @@ class ConnectionManager
 		try {
 			$adapter = ConnectionFactory::getConnectionAdapter($type);
 		} catch (\Exception $e) {
-			return;
+			throw $e;
 		}
 		$adapter = new $adapter($config);
 		if (!$name) {

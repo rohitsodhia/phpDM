@@ -15,12 +15,14 @@ class MysqlConnectionAdapter extends ConnectionAdapterInterface
 	 * @return mixed
 	 */
 	public static function createConnection(array $config = []) {
-		$config = array_merge([
-			
+		$hostname = $config['hostname'];
+		$database = $config['database'];
+		unset($config['hostname'], $config['database']);
+		$options = array_merge([
+			\PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_OBJ,
+			\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
 		], $config);
-		$mysql = new \PDO("mysql:host={$config['hostname']};dbname={$config['database']}", $config['username'], $config['password']);
-		$mysql->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_OBJ);
-		$mysql->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+		$mysql = new \PDO("mysql:host={$hostname};dbname={$database}", $config['username'], $config['password'], $options);
 		return $mysql;
 	}
 

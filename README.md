@@ -11,6 +11,7 @@ This project currently supports MySQL and MongoDB.
 First, create a connection with the `ConnectionManager`.
 
 MySQL:
+
 ```php
 \phpDM\Connections\ConnectionManager::addConnection(
 	[
@@ -24,6 +25,7 @@ MySQL:
 ```
 
 MongoDB:
+
 ```php
 \phpDM\Connections\ConnectionManager::addConnection(
 	[
@@ -66,7 +68,8 @@ The following field types are available:
 * `array()` - accepts an array of the type within the parenthesis, ex. `array(string)`
 * `object:\Models\User` - accepts a class (with namespace) after the colon, to be used as an embedded object. If you're looking to embed objects that are only being used to model that embedded data, you should use the `GenericModel` class. If you intend on using the class independently, the class **must** be a phpDM Model of the same type as the model embedding it. In MySQL, this is converted to JSON on save.
 
-While not strictly necessary, its important to define the primary key:
+While not strictly necessary, its important to define theEmterrizzi84@gmail.com primary key:
+
 ```php
 static protected $primaryKey = 'id';
 ```
@@ -177,7 +180,7 @@ User::where('username', 'rohit')->orWhere('active', '!=', 0)->get()
 
 To add sorting, simply chain the `sort` function onto the Query Builder. The first parameter is the field to sort on, the second is the direction to sort on (`asc` for ascending or `desc` for descending). The default direction is ascending.
 
-```
+```php
 sort('registeredOn', 'desc');
 ```
 
@@ -189,13 +192,13 @@ To retrieve a limited number of rows, you can use the `limit` method, simply pas
 
 You can do both together using `paginate`. Paginate takes two values, first the number of entries you want returned, second the page number, starting with 1.
 
-```
+```php
 paginate(20, 1)
 ```
 
 will retrieve entries 0-19.
 
-```
+```php
 paginate(20, 2)
 ```
 
@@ -205,7 +208,7 @@ will retrieve entries 20-39.
 
 Whether creating a new database entry or updating an existing row, use the `save` method. Called on an instance of a model, it will check for any data that has been changed and save that data to the database. If there is no primary key, it will attempt to insert a new entry; if there is a primary key, it will attempt to update an entry. If the databse allows it, it will return the number of affected rows on success, or `false` on failure.
 
-```
+```php
 $user = new User();
 $user->username = 'rohit';
 $user->save();
@@ -213,7 +216,7 @@ $user->save();
 
 This will insert a new entry with the `username` 'rohit'.
 
-```
+```php
 $user = User::find(1);
 $user->email = 'test@test.com';
 $user->save();
@@ -227,7 +230,7 @@ In MySQL, values of type `array` or `object` will be converted to json for stora
 
 To delete a query, simply call `remove` on a model.
 
-```
+```php
 User::where('userId', 4)->remove()
 ```
 
@@ -237,7 +240,7 @@ If the model has a `deletedTimestamp` field, the field will be updated to the cu
 
 In case you want to start a model query but don't yet have a method to chain, you can call `query`.
 
-```
+```php
 $queryBuilder = User::query();
 ```
 

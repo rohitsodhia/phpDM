@@ -6,7 +6,7 @@ namespace phpDM\Connections\Adapters;
  * An abstract class to build database and cache connections off of
  * @package phpDM\Connections\Adapters
  */
-abstract class ConnectionInterface
+abstract class ConnectionAdapterInterface
 {
 
 	/**

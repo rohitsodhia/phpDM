@@ -6,7 +6,7 @@ namespace phpDM\Connections\Adapters;
  * Connection adapter for MongoDB
  * @package phpDM\Connections\Adapters
  */
-class MongoConnectionAdapter extends ConnectionInterface
+class MongoConnectionAdapter extends ConnectionAdapterInterface
 {
 
 	/**

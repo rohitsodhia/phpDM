@@ -6,7 +6,7 @@ namespace phpDM\Connections\Adapters;
  * Connection adapter for MySQL
  * @package phpDM\Connections\Adapters
  */
-class MysqlConnectionAdapter extends ConnectionInterface
+class MysqlConnectionAdapter extends ConnectionAdapterInterface
 {
 
 	/**

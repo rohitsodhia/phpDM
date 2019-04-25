@@ -10,11 +10,11 @@ class MysqlConnectionAdapter extends ConnectionAdapterInterface
 {
 
 	/**
-	 * Creates a MongoDB connection
+	 * Creates a MySQL PDO connection
 	 * @param array $config Connection configs
 	 * @return mixed
 	 */
-	public static function createConnection(array $config = []) {
+	protected function createConnection(array $config = []) {
 		$hostname = $config['hostname'];
 		$database = $config['database'];
 		unset($config['hostname'], $config['database']);

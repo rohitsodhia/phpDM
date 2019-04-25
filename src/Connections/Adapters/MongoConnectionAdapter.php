@@ -10,13 +10,12 @@ class MongoConnectionAdapter extends ConnectionAdapterInterface
 {
 
 	/**
-	 * Creates a MySQL PDO connection
+	 * Creates a MongoDB connection
 	 * @param array $config Connection configs
-	 * @return mixed
+	 * @return \MongoDB\Client
 	 */
-	public static function createConnection(array $config = []) {
+	protected function createConnection(array $config = []) {
 		$config = array_merge([
-			
 		], $config);
 		return (new \MongoDB\Client(
 			null,

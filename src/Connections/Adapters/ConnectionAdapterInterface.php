@@ -12,45 +12,32 @@ abstract class ConnectionAdapterInterface
 	/**
 	 * @var mixed Database or cache connection
 	 */
-	protected $connection;
+	private $connection;
 
 	/**
 	 * @var array Options for connection
 	 */
-	protected $options = [];
-
-	/**
-	 * @var array Valid system options
-	 */
-	protected static $globalValidOptions = [
-		'case'
-	];
-
+	private $options = [];
+	
 	/**
 	 * @var array Valid options
 	 */
-	protected static $validOptions = [];
-
-	/**
-	 * @var array Default system options
-	 */
-	protected static $globalDefaultOptions = [
+	private const VALID_OPTIONS = [
+		'case',
 	];
 
 	/**
 	 * @var array Default options
 	 */
-	protected static $defaultOptions = [];
+	private const DEFAULT_OPTIONS = [];
 
 	/**
 	 * ConnectionInterface constructor.
 	 * @param array $configs Connection configs
 	 */
-	public function __construct(array $configs) {
-		$this->connection = static::createConnection($configs);
-		if (isset($configs['options'])) {
-			$this->setOptions($configs['options']);
-		}
+	public function __construct(array $configs, array $options = []) {
+		$this->setOptions($options);
+		$this->connection = $this->createConnection($configs);
 	}
 
 	/**
@@ -58,7 +45,7 @@ abstract class ConnectionAdapterInterface
 	 * @param array $config Connection configs
 	 * @return mixed
 	 */
-	abstract public static function createConnection(array $config);
+	abstract protected function createConnection(array $config);
 
 	/**
 	 * Returns the connection object
@@ -73,11 +60,9 @@ abstract class ConnectionAdapterInterface
 	 * @param array $options Connection options
 	 */
 	public function setOptions(array $options) {
-		$defaults = array_merge(static::$globalDefaultOptions, static::$defaultOptions);
-		$validOptions = array_merge(static::$globalValidOptions, static::$validOptions);
-		$options = array_merge($defaults, $options);
+		$options = array_merge(self::DEFAULT_OPTIONS, $options);
 		foreach (array_keys($options) as $key) {
-			if (array_search($key, $validOptions) === false) {
+			if (array_search($key, self::VALID_OPTIONS) === false) {
 				unset($options[$key]);
 			}
 		}

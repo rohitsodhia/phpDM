@@ -4,7 +4,9 @@ namespace phpDM;
 
 class Helpers
 {
-	public static function toCamelCase(string $str, $ucFirst = false): string {
+
+	public static function toCamelCase(string $str, $ucFirst = false): string
+	{
 		$parts = explode('_', $str);
 		$str = implode('', array_map(function ($part) {
 			return ucfirst(strtolower($part));
@@ -15,7 +17,8 @@ class Helpers
 		return $str;
 	}
 
-	public static function toSnakeCase(string $str): string {
+	public static function toSnakeCase(string $str): string
+	{
 		preg_match_all('#([A-Z][A-Z0-9]*(?=$|[A-Z][a-z0-9])|[A-Za-z][a-z0-9]+)#', $str, $matches);
 		$string = $matches[0];
 		foreach ($string as &$match) {
@@ -24,7 +27,8 @@ class Helpers
 		return implode('_', $string);
 	}
 
-	public static function randStr(int $length = 8) {
+	public static function randStr(int $length = 8)
+	{
 		$chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 		$str = '';
 		do {
@@ -33,4 +37,5 @@ class Helpers
 
 		return $str;
 	}
+
 }

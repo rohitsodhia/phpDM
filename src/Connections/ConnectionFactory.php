@@ -4,7 +4,7 @@ namespace phpDM\Connections;
 
 use \Exception;
 use phpDM\QueryBuilder\{
-	MongoQueryBuilder, MysqlQueryBuilder, QueryBuilder
+	MongoQueryBuilder, MysqlQueryBuilder
 };
 use phpDM\Models\{
 	MongoModel,
@@ -19,28 +19,34 @@ class ConnectionFactory
 {
 
 	/**
+	 * @var ConnectionFactory Singleton instance
+	 */
+	private static $instance = null;
+
+	/**
 	 * @var array List of added adapters
 	 */
-	private static $connectionAdapters = [];
+	private $connectionAdapters = [];
 
 	/**
 	 * @var array List of added query builders
 	 */
-	private static $queryBuilders = [];
+	private $queryBuilders = [];
 
 	/**
+	 * Private constuctor to prevent instance instantiation
 	 * Registers connection details depending on installed packages
 	 */
-	public static function init() {
+	private function __construct() {
 		if (class_exists('\MongoDB\Client')) {
-			self::registerConnection('mongo', [
+			$this->registerConnection('mongo', [
 				'adapter' => Adapters\MongoConnectionAdapter::class,
 				'queryBuilder' => MongoQueryBuilder::class,
 				'model' => MongoModel::class
 			]);
 		}
 		if (class_exists('\PDO')) {
-			self::registerConnection('mysql', [
+			$this->registerConnection('mysql', [
 				'adapter' => Adapters\MysqlConnectionAdapter::class,
 				'queryBuilder' => MysqlQueryBuilder::class,
 				'model' => MysqlModel::class
@@ -48,23 +54,31 @@ class ConnectionFactory
 		}
 	}
 
+	public static function getInstance() {
+		if (self::$instance == null) {
+			self::$instance = new ConnectionFactory();
+		}
+
+		return $this->instance;
+	}
+
 	/**
 	 * Registers a connection
 	 * @param string $type
 	 * @param array $config
 	 */
-	public static function registerConnection(string $type, array $config) {
-		self::$connectionAdapters[$type] = $config['adapter'];
+	private function registerConnection(string $type, array $config) {
+		$this->connectionAdapters[$type] = $config['adapter'];
 		if (key_exists('queryBuilder', $config)) {
-			self::$queryBuilders[$type] = $config['queryBuilder'];
+			$this->queryBuilders[$type] = $config['queryBuilder'];
 		}
 	}
 
 	/**
 	 * @return array
 	 */
-	public static function getConnectionAdapters(): array {
-		return self::$connectionAdapters;
+	public function getConnectionAdapters(): array {
+		return $this->connectionAdapters;
 	}
 
 	/**
@@ -72,9 +86,9 @@ class ConnectionFactory
 	 * @return string
 	 * @throws \Exception
 	 */
-	public static function getConnectionAdapter(string $type): string {
-		if (isset(self::$connectionAdapters[$type])) {
-			return self::$connectionAdapters[$type];
+	public function getConnectionAdapter(string $type): string {
+		if (isset($this->connectionAdapters[$type])) {
+			return $this->connectionAdapters[$type];
 		} else {
 			throw new Exception('Invalid connection type:' . $type);
 		}
@@ -83,8 +97,8 @@ class ConnectionFactory
 	/**
 	 * @return array
 	 */
-	public static function getQueryBuilders(): array {
-		return self::$queryBuilders;
+	public function getQueryBuilders(): array {
+		return $this->queryBuilders;
 	}
 
 	/**
@@ -92,9 +106,9 @@ class ConnectionFactory
 	 * @return string
 	 * @throws \Exception
 	 */
-	public static function getQueryBuilder(string $type): string {
-		if (isset(self::$queryBuilders[$type])) {
-			return self::$queryBuilders[$type];
+	public function getQueryBuilder(string $type): string {
+		if (isset($this->queryBuilders[$type])) {
+			return $this->queryBuilders[$type];
 		} else {
 			throw new Exception('Invalid query builder');
 		}

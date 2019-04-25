@@ -8,35 +8,57 @@ class ConnectionManager
 {
 
 	/**
+	 * @var ConnectionManager Singleton instance
+	 */
+	private static $instance = null;
+
+	/**
+	 * @var ConnectionFactory Singleton instance
+	 */
+	private $connectionFactory = null;
+
+	/**
 	 * @var array List of connections
 	 */
-	private static $connections = [];
+	private $connections = [];
 
 	/**
 	 * @var array Map of connection names to type
 	 */
-	private static $connectionNameTypeMap = [];
+	private $connectionNameTypeMap = [];
+
+	/**
+	 * Private constuctor to prevent instance instantiation
+	 */
+	private function __construct() {
+		$this->connectionFactory = ConnectionFactory::getInstance();
+	}
+
+	public static function getInstance() {
+		if (self::$instance == null) {
+			self::$instance = new ConnectionManager();
+		}
+
+		return self::$instance;
+	}
 
 	/**
 	 * @param string $type Connection type
 	 * @param $config array Array containing connection details
 	 * @param string|null $name Optional name for multiple connections of the same type
 	 */
-	public static function addConnection(string $type, $config, string $name = null) {
-		if (count(ConnectionFactory::getConnectionAdapters()) === 0) {
-			ConnectionFactory::init();
-		}
+	public function addConnection(string $type, $config, string $name = null) {
 		try {
-			$adapter = ConnectionFactory::getConnectionAdapter($type);
+			$adapterClass = $this->connectionFactory->getConnectionAdapter($type);
 		} catch (\Exception $e) {
 			throw $e;
 		}
-		$adapter = new $adapter($config);
+		$adapter = new $adapterClass($config);
 		if (!$name) {
-			self::$connections[$type][] = $adapter;
+			$this->connections[$type][] = $adapter;
 		} else {
-			self::$connections[$type][$name] = $adapter;
-			self::$connectionNameTypeMap[$name] = $type;
+			$this->connections[$type][$name] = $adapter;
+			$this->connectionNameTypeMap[$name] = $type;
 		}
 	}
 
@@ -45,11 +67,15 @@ class ConnectionManager
 	 * @param string|null $name Connection name
 	 * @return ConnectionInterface|null
 	 */
-	public static function getConnection(string $type, string $name = null) {
+	public function getConnection(string $type, string $name = null) {
 		if ($name !== null && strlen($name)) {
-			return key_exists($name, self::$connectionNameTypeMap) ? self::$connections[self::$connectionNameTypeMap[$name]][$name] : null;
-		} elseif (key_exists($type, self::$connections)) {
-			return array_values(self::$connections[$type])[0];
+			if (key_exists($name, $this->connectionNameTypeMap)) {
+				return $this->connections[$this->connectionNameTypeMap[$name]][$name];
+			 } else {
+				 return null;
+			 }
+		} elseif (key_exists($type, $this->connections)) {
+			return array_values($this->connections[$type])[0];
 		}
 		return null;
 	}

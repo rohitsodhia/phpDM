@@ -32,7 +32,7 @@ abstract class ConnectionAdapterInterface
 	private const DEFAULT_OPTIONS = [];
 
 	/**
-	 * ConnectionInterface constructor.
+	 * ConnectionInterface constructor
 	 * @param array $configs Connection configs
 	 */
 	public function __construct(array $configs, array $options = []) {

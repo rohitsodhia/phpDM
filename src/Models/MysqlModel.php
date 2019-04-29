@@ -5,7 +5,7 @@ namespace phpDM\Models;
 class MysqlModel extends BaseModel
 {
 
-	public static $type = 'mysql';
+	private const TYPE = 'mysql';
 	static protected $primaryKey = 'id';
 
 	public static function castValue(string $cast, $value) {
@@ -22,7 +22,7 @@ class MysqlModel extends BaseModel
 	}
 
 	public static function first() {
-		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
+		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(self::TYPE);
 		$queryBuilder = new $queryBuilder(static::$connection ?: null);
 		$queryBuilder->setHydrate(static::class);
 		$queryBuilder = static::addSoftDeleteWhere($queryBuilder);
@@ -39,7 +39,7 @@ class MysqlModel extends BaseModel
 			return null;
 		}
 		$primaryKey = static::$primaryKey;
-		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
+		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(self::TYPE);
 		$queryBuilder = new $queryBuilder(static::$connection ?: null);
 		$queryBuilder->setHydrate(static::class);
 		$queryBuilder = $queryBuilder->table(static::getTableName())->select(array_keys(static::$fields));
@@ -50,7 +50,7 @@ class MysqlModel extends BaseModel
 	}
 
 	public function updateOneOnPrimaryKey($data) {
-		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
+		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(self::TYPE);
 		$queryBuilder = new $queryBuilder(static::$connection ?: null);
 		$return = $queryBuilder
 			->table(static::getTableName())
@@ -68,7 +68,7 @@ class MysqlModel extends BaseModel
 			$return = $this->updateOneOnPrimaryKey($changedData);
 			return $return;
 		} elseif ($this->new) {
-			$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
+			$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(self::TYPE);
 			$this->addTimestamps($curTime);
 			$data = $this->getData();
 			$queryBuilder = new $queryBuilder(static::$connection ?: null);

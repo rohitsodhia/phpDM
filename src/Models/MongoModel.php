@@ -7,7 +7,7 @@ use phpDM\Connections\ConnectionFactory;
 class MongoModel extends BaseModel
 {
 
-	public static $type = 'mongo';
+	private const TYPE = 'mongo';
 	static protected $primaryKey = '_id';
 
 	public static function castValue(string $cast, $value)
@@ -67,7 +67,7 @@ class MongoModel extends BaseModel
 	public static function first()
 	{
 		try {
-			$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
+			$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(self::TYPE);
 		} catch (\Exception $e) {
 			die('No query builder found');
 		}
@@ -96,7 +96,7 @@ class MongoModel extends BaseModel
 		if (static::$fields[$primaryKey] === 'mongoId' && gettype($id) === 'string') {
 			$id = new \MongoDB\BSON\ObjectId($id);
 		}
-		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
+		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(self::TYPE);
 		$queryBuilder = new $queryBuilder(static::$connection ?: '');
 		$queryBuilder->setHydrate(static::class);
 		$queryBuilder = $queryBuilder->table(static::getTableName())->select(array_keys(static::$fields));
@@ -107,7 +107,7 @@ class MongoModel extends BaseModel
 
 	public function save()
 	{
-		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
+		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(self::TYPE);
 		if (!$this->new && $this->data[static::$primaryKey]) {
 			$curTime = new \Carbon\Carbon();
 			$this->addTimestamps($curTime);

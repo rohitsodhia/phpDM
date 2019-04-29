@@ -7,7 +7,7 @@ use phpDM\QueryBuilder\QueryBuilder;
 abstract class BaseModel implements \JsonSerializable
 {
 
-	public static $type;
+	private const TYPE = '';
 	public static $connection;
 	protected static $table;
 	protected $new = true;
@@ -50,7 +50,7 @@ abstract class BaseModel implements \JsonSerializable
 
 		$table = @end(explode('\\', get_called_class()));
 		$table = \phpDM\Inflect::pluralize($table);
-		$connection = \phpDM\Connections\ConnectionManager::getConnection(static::$type, static::$connection);
+		$connection = \phpDM\Connections\ConnectionManager::getConnection(self::TYPE, static::$connection);
 		if (!$connection) {
 			throw new \Exception('No connection');
 		}
@@ -64,7 +64,7 @@ abstract class BaseModel implements \JsonSerializable
 	}
 
 	public static function getQueryBuilder(): QueryBuilder {
-		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
+		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(self::TYPE);
 		$queryBuilder = new $queryBuilder(static::$connection ?: '');
 		$queryBuilder->table(static::getTableName())->setHydrate(static::class);
 		return $queryBuilder;
@@ -127,7 +127,7 @@ abstract class BaseModel implements \JsonSerializable
 		}
 	}
 
-	public static function getCast($cast) {
+	protected function getCast($cast) {
 		if (gettype($cast) === 'array' && isset($cast['type']) && gettype($cast['type']) === 'string') {
 			$cast = $cast['type'];
 		}
@@ -149,10 +149,10 @@ abstract class BaseModel implements \JsonSerializable
 	}
 
 	public static function parseValue($value, $options) {
-		$cast = static::getCast($options);
+		$cast = $this->getCast($options);
 
 		if (is_string($cast)) {
-			return static::castValue($cast, $value);
+			return $this->castValue($cast, $value);
 		} elseif ($cast[0] === 'array') {
 			if (gettype($value) === 'string' && $decoded = json_decode($value)) {
 				if (gettype($decoded) === 'array') {
@@ -185,7 +185,7 @@ abstract class BaseModel implements \JsonSerializable
 		return $value;
 	}
 
-	public static function castValue(string $cast, $value) {
+	protected function castValue(string $cast, $value) {
 		if ($value === null) {
 			return null;
 		} elseif ($cast === 'bool' || $cast === 'boolean') {
@@ -266,7 +266,7 @@ abstract class BaseModel implements \JsonSerializable
 //			if (!array_key_exists($field, $this->data)) {
 //				continue;
 //			}
-			$cast = static::getCast($options);
+			$cast = $this->getCast($options);
 			if (is_string($cast)) {
 				$data[$field] = $this->data[$field];
 			} elseif ($cast[0] === 'array') {
@@ -284,7 +284,7 @@ abstract class BaseModel implements \JsonSerializable
 	}
 
 	protected function getArray(array $cast, array $fieldValue) {
-		$partsCast = static::getCast($cast[1]);
+		$partsCast = $this->getCast($cast[1]);
 		if (is_string($partsCast)) {
 			$data = $fieldValue;
 		} elseif ($partsCast[0] === 'object') {
@@ -304,7 +304,7 @@ abstract class BaseModel implements \JsonSerializable
 			if (!isset($this->data[$field])) {
 				continue;
 			}
-			$cast = static::getCast($options);
+			$cast = $this->getCast($options);
 			if (is_string($cast)) {
 				if (in_array($field, $this->changed)) {
 					$changedData[$field] = $this->data[$field];

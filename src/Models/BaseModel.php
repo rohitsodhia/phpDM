@@ -7,18 +7,51 @@ use phpDM\QueryBuilder\QueryBuilder;
 abstract class BaseModel implements \JsonSerializable
 {
 
+	/**
+	 * @var string Model type
+	 */
 	private const TYPE = '';
-	public static $connection;
-	protected static $table;
+
+	/**
+	 * @var string Specificy a connection by name
+	*/
+	public CONST CONNECTION = null;
+
+	/**
+	 * @var string (Optional) Set a table name
+	 */
+	protected CONST TABLE = null;
+
+	/**
+	 * @var boolean Tracks if the model is new (not from database)
+	 */
 	protected $new = true;
+
+	/**
+	 * @var boolean Marks as hydrating, bypassing some validation
+	 */
 	protected $hydrating = false;
+
+	/**
+	 * @var string Collection primary key
+	 */
 	static protected $primaryKey;
+
+	/**
+	 * @var string Format for the timestring built by Carbon
+	 */
 	static protected $timestampFormat = 'Y-m-d H:i:s';
+
 	static protected $fields = [];
 	protected $data = [];
 	protected $original = [];
 	protected $changed = [];
 
+	/**
+	 * Initilize model with data
+	 *
+	 * @param array $data
+	 */
 	public function __construct($data = null) {
 		if ($data) {
 			foreach ($data as $field => $value) {
@@ -31,30 +64,50 @@ abstract class BaseModel implements \JsonSerializable
 		}
 	}
 
+	/**
+	 * Allows object to be serializable
+	 *
+	 * @return array
+	 */
 	public function __sleep() {
 		return ['data'];
 	}
 
+	/**
+	 * Allows object to be unserializable
+	 */
 	public function __wakeup() {
 		$this->original = $this->data;
 	}
 
+	/**
+	 * Allows method to be JSON serializable
+	 *
+	 * @return array Array of data values
+	 */
 	public function jsonSerialize() {
 		return $this->getData(true);
 	}
 
+	/**
+	 * If a table name is provided 
+	 *
+	 * @return string
+	 */
 	public static function getTableName() {
 		if (isset(static::$table)) {
 			return static::$table;
 		}
 
-		$table = @end(explode('\\', get_called_class()));
-		$table = \phpDM\Inflect::pluralize($table);
-		$connection = \phpDM\Connections\ConnectionManager::getConnection(self::TYPE, static::$connection);
-		if (!$connection) {
+		$connectionManager = \phpDM\Connections\ConnectionManager::getInstance();
+		$adapter = $connectionManager->getConnection(static::TYPE, self::CONNECTION);
+		if (!$adapter) {
 			throw new \Exception('No connection');
 		}
-		$case = $connection->getOption('case');
+		$case = $adapter->getOption('case');
+
+		$table = @end(explode('\\', get_called_class()));
+		$table = \phpDM\Inflect::pluralize($table);
 		if ($case === 'camel') {
 			$table = lcfirst($table);
 		} else {
@@ -63,13 +116,28 @@ abstract class BaseModel implements \JsonSerializable
 		return $table;
 	}
 
+	/**
+	 * Undocumented function
+	 *
+	 * @return QueryBuilder
+	 */
 	public static function getQueryBuilder(): QueryBuilder {
-		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(self::TYPE);
-		$queryBuilder = new $queryBuilder(static::$connection ?: '');
+		$connectionFactory = \phpDM\Connections\ConnectionFactory::getInstance();
+		$queryBuilder = $connectionFactory->getQueryBuilder(self::TYPE);
+		$connectionManager = \phpDM\Connections\ConnectionManager::getInstance();
+		$adapter = $connectionManager->getConnection(static::TYPE, self::CONNECTION);
+		$queryBuilder = new $queryBuilder($adapter ?: '');
 		$queryBuilder->table(static::getTableName())->setHydrate(static::class);
 		return $queryBuilder;
 	}
 
+	/**
+	 * Allows using query builder methods as a static on a Model
+	 *
+	 * @param string $method Query builder method
+	 * @param mixed $params Values passed to query builder method
+	 * @return QueryBuilder
+	 */
 	public static function __callStatic($method, $params): QueryBuilder {
 		$queryBuilder = static::getQueryBuilder();
 		if (method_exists($queryBuilder, $method)) {
@@ -80,6 +148,12 @@ abstract class BaseModel implements \JsonSerializable
 		}
 	}
 
+	/**
+	 * Access fields as direct properties of the model
+	 *
+	 * @param string $key Field to get
+	 * @return mixed
+	 */
 	public function __get(string $key) {
 		if (!array_key_exists($key, static::$fields)) {
 			trigger_error('Invalid field: ' . $key);
@@ -107,10 +181,15 @@ abstract class BaseModel implements \JsonSerializable
 		return $value;
 	}
 
+	/**
+	 * Set fields as direct properties of the model
+	 *
+	 * @param string $key Field to set
+	 * @param mixed $value Value of field
+	 */
 	public function __set(string $key, $value) {
 		if (!array_key_exists($key, static::$fields)) {
 			trigger_error('Invalid field: ' . $key);
-			return null;
 			// throw new \Exception('Invalid field: ' . $key);
 		}
 		if (!$this->hydrating) {
@@ -209,10 +288,18 @@ abstract class BaseModel implements \JsonSerializable
 		}
 	}
 
+	/**
+	 * Mark a model as new, meaning not in the database
+	 *
+	 * @param boolean $new
+	 */
 	public function setNew(bool $new) {
 		$this->new = $new;
 	}
 
+	/**
+	 * Store current data as original
+	 */
 	public function setOriginal() {
 		foreach ($this->data as $key => $value) {
 			if (is_object($value)) {
@@ -222,10 +309,21 @@ abstract class BaseModel implements \JsonSerializable
 		}
 	}
 
+	/**
+	 * Wrapper to clone values
+	 *
+	 * @param mixed $value
+	 */
 	protected static function clone($value) {
 		return clone $value;
 	}
 
+	/**
+	 * Get original value of a field or all fields
+	 *
+	 * @param string $field
+	 * @return mixed
+	 */
 	public function getOriginal(string $field = null) {
 		if ($field) {
 			return isset($this->original[$field]) ? $this->original[$field] : null;
@@ -237,10 +335,21 @@ abstract class BaseModel implements \JsonSerializable
 		$this->changed = [];
 	}
 
+	/**
+	 * Set hydrating state
+	 *
+	 * @param boolean $state
+	 */
 	public function setHydrating(bool $state) {
 		$this->hydrating = $state;
 	}
 
+	/**
+	 * Populates object with supplied data, setting it as original
+	 *
+	 * @param array $data
+	 * @return BaseModel
+	 */
 	public static function hydrate($data) {
 		if ($data === null) {
 			return null;
@@ -340,6 +449,11 @@ abstract class BaseModel implements \JsonSerializable
 		}
 	}
 
+	/**
+	 * Remove entry from database
+	 *
+	 * @return number|null
+	 */
 	public function remove() {
 		$queryBuilder = static::getQueryBuilder();
 		$return = $queryBuilder
@@ -351,6 +465,11 @@ abstract class BaseModel implements \JsonSerializable
 		return $return ? $queryBuilder->rowCount() : null;
 	}
 
+	/**
+	 * Get empty query builder associated with model
+	 *
+	 * @return QueryBuilder
+	 */
 	public static function query() {
 		$queryBuilder = static::getQueryBuilder();
 		$queryBuilder->setHydrate(static::class);

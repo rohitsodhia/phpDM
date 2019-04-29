@@ -12,24 +12,24 @@ abstract class ConnectionAdapterInterface
 	/**
 	 * @var mixed Database or cache connection
 	 */
-	private $connection;
+	protected $connection;
 
 	/**
 	 * @var array Options for connection
 	 */
-	private $options = [];
+	protected $options = [];
 	
 	/**
 	 * @var array Valid options
 	 */
-	private const VALID_OPTIONS = [
+	protected const VALID_OPTIONS = [
 		'case',
 	];
 
 	/**
 	 * @var array Default options
 	 */
-	private const DEFAULT_OPTIONS = [];
+	protected const DEFAULT_OPTIONS = [];
 
 	/**
 	 * ConnectionInterface constructor

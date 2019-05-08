@@ -3,6 +3,7 @@
 namespace phpDM\Models;
 
 use phpDM\QueryBuilder\QueryBuilder;
+use phpDM\Models\Fields\BaseField;
 
 abstract class BaseModel implements \JsonSerializable
 {
@@ -45,8 +46,6 @@ abstract class BaseModel implements \JsonSerializable
 	protected $_timestampFormat = 'Y-m-d H:i:s';
 
 	protected $_fieldFactory = null;
-	protected $_structure = [];
-	protected $_defaults = [];
 	protected $_data = [];
 
 	/**
@@ -54,15 +53,32 @@ abstract class BaseModel implements \JsonSerializable
 	 *
 	 * @param array $data
 	 */
-	public function __construct($data = null) {
-		if ($data) {
-			foreach ($data as $field => $value) {
-				if (array_key_exists($field, static::$fields)) {
-					$this->$field = $value;
+	public function __construct($data = []) {
+		$this->_parseFields();
+	}
+
+	protected function _parseFields() {
+		foreach (get_object_vars($this) as $prop => $defaultValue) {
+			if ($prop[0] !== '_') {
+				$rProp = new \ReflectionProperty($this, $prop);
+				$comment = $rProp->getDocComment();
+				$tags = preg_match_all('/\*\s+@(\w+?) (.+?)\s/', $comment, $matches, PREG_SET_ORDER);
+				$options = ['default' => $defaultValue];
+				foreach ($matches as $match) {
+					list($full, $tag, $tagValue) = $match;
+					switch ($tag) {
+						case 'type':
+							$options['type'] = $this->_fieldFactory::getField($tagValue);
+							break;
+						case 'default':
+							$options['default'] = $tagValue;
+							break;
+					}
+				}
+				if (key_exists('type', $options)) {
+					$this->$prop = new $options['type']($options['default']);
 				}
 			}
-			$this->original = $this->data;
-			$this->resetChanged();
 		}
 	}
 
@@ -157,10 +173,11 @@ abstract class BaseModel implements \JsonSerializable
 	 * @return mixed
 	 */
 	public function __get(string $key) {
-		if (!array_key_exists($key, static::$fields)) {
+		if (!property_exists($this, $key)) {
 			trigger_error('Invalid field: ' . $key);
-			return null;
+			// throw new \Exception('Invalid field: ' . $key);
 		}
+		return $this->$key->get();-$value = null;
 		$value = null;
 		if (isset($this->data[$key])) {
 			$value = $this->data[$key];
@@ -190,7 +207,10 @@ abstract class BaseModel implements \JsonSerializable
 	 * @param mixed $value Value of field
 	 */
 	public function __set(string $key, $value) {
-		if (!array_key_exists($key, static::$fields)) {
+		if (!property_exists($this, $key) && $value instanceof BaseField) {
+			$this->$key = $value;
+			return;
+		} elseif (!property_exists($this, $key)) {
 			trigger_error('Invalid field: ' . $key);
 			// throw new \Exception('Invalid field: ' . $key);
 		}

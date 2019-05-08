@@ -59,7 +59,7 @@ class ConnectionFactory
 			self::$instance = new ConnectionFactory();
 		}
 
-		return $this->instance;
+		return self::$instance;
 	}
 
 	/**

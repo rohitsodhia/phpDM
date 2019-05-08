@@ -58,7 +58,7 @@ class MongoModel extends BaseModel
 
 	public static function addSoftDeleteWhere($queryBuilder)
 	{
-		if (($key = array_search('deletedTimestamp', static::$fields)) !== false) {
+		if (($key = array_search('deletedTimestamp', $this->fields)) !== false) {
 			$queryBuilder->where($key, null);
 		}
 		return $queryBuilder;
@@ -76,7 +76,7 @@ class MongoModel extends BaseModel
 		$queryBuilder = static::addSoftDeleteWhere($queryBuilder);
 		$return = $queryBuilder
 			->table(static::getTableName())
-			->select(array_keys(static::$fields));
+			->select(array_keys($this->fields));
 		if (isset($first)) {
 			$return = $return->where('_id', $first->_id);
 		} else {
@@ -93,13 +93,13 @@ class MongoModel extends BaseModel
 			return null;
 		}
 		$primaryKey = static::$primaryKey;
-		if (static::$fields[$primaryKey] === 'mongoId' && gettype($id) === 'string') {
+		if ($this->fields[$primaryKey] === 'mongoId' && gettype($id) === 'string') {
 			$id = new \MongoDB\BSON\ObjectId($id);
 		}
 		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(self::TYPE);
 		$queryBuilder = new $queryBuilder(static::$connection ?: '');
 		$queryBuilder->setHydrate(static::class);
-		$queryBuilder = $queryBuilder->table(static::getTableName())->select(array_keys(static::$fields));
+		$queryBuilder = $queryBuilder->table(static::getTableName())->select(array_keys($this->fields));
 		$queryBuilder = static::addSoftDeleteWhere($queryBuilder);
 		$result = $queryBuilder->where($primaryKey, $id)->first();
 		return $result;

@@ -6,35 +6,30 @@ class MysqlModel extends BaseModel
 {
 
 	private const TYPE = 'mysql';
-	static protected $primaryKey = 'id';
+	static protected $_primaryKey = 'id';
+	protected $_fieldFactory = FieldFactories\MysqlFieldFactory::class;
 
-	public static function castValue(string $cast, $value) {
-		if (($possibleValue = parent::castValue($cast, $value)) !== null) {
-			return $possibleValue;
-		}
-	}
-
-	public static function addSoftDeleteWhere($queryBuilder) {
-		if (($key = array_search('deletedTimestamp', static::$fields)) !== false) {
+	protected function addSoftDeleteWhere($queryBuilder) {
+		if (($key = array_search('deletedTimestamp', $this->fields)) !== false) {
 			$queryBuilder->where($key, null);
 		}
 		return $queryBuilder;
 	}
 
-	public static function first() {
+	public function first() {
 		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(self::TYPE);
 		$queryBuilder = new $queryBuilder(static::$connection ?: null);
 		$queryBuilder->setHydrate(static::class);
 		$queryBuilder = static::addSoftDeleteWhere($queryBuilder);
 		$return = $queryBuilder
 			->table(static::getTableName())
-			->select(array_keys(static::$fields))
+			->select(array_keys($this->fields))
 			->limit(1)
 			->get();
 		return $return;
 	}
 
-	public static function find($id) {
+	public function find($id) {
 		if (!isset(static::$primaryKey)) {
 			return null;
 		}
@@ -42,7 +37,7 @@ class MysqlModel extends BaseModel
 		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(self::TYPE);
 		$queryBuilder = new $queryBuilder(static::$connection ?: null);
 		$queryBuilder->setHydrate(static::class);
-		$queryBuilder = $queryBuilder->table(static::getTableName())->select(array_keys(static::$fields));
+		$queryBuilder = $queryBuilder->table(static::getTableName())->select(array_keys($this->fields));
 		$queryBuilder->where($primaryKey, $id);
 		$queryBuilder = static::addSoftDeleteWhere($queryBuilder);
 		$result = $queryBuilder->first();

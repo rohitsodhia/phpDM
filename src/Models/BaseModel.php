@@ -7,6 +7,8 @@ use phpDM\QueryBuilder\QueryBuilder;
 abstract class BaseModel implements \JsonSerializable
 {
 
+	protected $_settingUp = true;
+
 	/**
 	 * @var string Model type
 	 */
@@ -25,27 +27,27 @@ abstract class BaseModel implements \JsonSerializable
 	/**
 	 * @var boolean Tracks if the model is new (not from database)
 	 */
-	protected $new = true;
+	protected $_new = true;
 
 	/**
 	 * @var boolean Marks as hydrating, bypassing some validation
 	 */
-	protected $hydrating = false;
+	protected $_hydrating = false;
 
 	/**
 	 * @var string Collection primary key
 	 */
-	static protected $primaryKey;
+	protected static $_primaryKey;
 
 	/**
 	 * @var string Format for the timestring built by Carbon
 	 */
-	static protected $timestampFormat = 'Y-m-d H:i:s';
+	protected $_timestampFormat = 'Y-m-d H:i:s';
 
-	static protected $fields = [];
-	protected $data = [];
-	protected $original = [];
-	protected $changed = [];
+	protected $_fieldFactory = null;
+	protected $_structure = [];
+	protected $_defaults = [];
+	protected $_data = [];
 
 	/**
 	 * Initilize model with data
@@ -142,8 +144,8 @@ abstract class BaseModel implements \JsonSerializable
 		$queryBuilder = static::getQueryBuilder();
 		if (method_exists($queryBuilder, $method)) {
 			$queryBuilder->setHydrate(static::class);
-			$queryBuilder = $queryBuilder->table(static::getTableName())->select(array_keys(static::$fields));
-			$queryBuilder = static::addSoftDeleteWhere($queryBuilder);
+			$queryBuilder = $queryBuilder->table(static::getTableName())->select(array_keys($this->_fields));
+			$queryBuilder = $this->addSoftDeleteWhere($queryBuilder);
 			return call_user_func_array([$queryBuilder, $method], $params);
 		}
 	}
@@ -192,17 +194,17 @@ abstract class BaseModel implements \JsonSerializable
 			trigger_error('Invalid field: ' . $key);
 			// throw new \Exception('Invalid field: ' . $key);
 		}
-		if (!$this->hydrating) {
+		if (!$this->_hydrating) {
 			$accessor = 'set' . \phpDM\Helpers::toCamelCase($key, true);
 			if (method_exists($this, $accessor)) {
 				$this->{$accessor}($value);
-				$value = $this->data[$key];
+				$value = $this->_data[$key];
 			}
 		}
-		$value = static::parseValue($value, static::$fields[$key]);
-		$this->data[$key] = $value;
-		if (!in_array($value, $this->changed)) {
-			$this->changed[] = $key;
+		$value = static::parseValue($value, $this->_fields[$key]);
+		$this->_data[$key] = $value;
+		if (!in_array($value, $this->_changed)) {
+			$this->_changed[] = $key;
 		}
 	}
 
@@ -294,18 +296,18 @@ abstract class BaseModel implements \JsonSerializable
 	 * @param boolean $new
 	 */
 	public function setNew(bool $new) {
-		$this->new = $new;
+		$this->_new = $new;
 	}
 
 	/**
 	 * Store current data as original
 	 */
 	public function setOriginal() {
-		foreach ($this->data as $key => $value) {
+		foreach ($this->_data as $key => $value) {
 			if (is_object($value)) {
 				$value = static::clone($value);
 			}
-			$this->original[$key] = $value;
+			$this->_original[$key] = $value;
 		}
 	}
 
@@ -326,13 +328,13 @@ abstract class BaseModel implements \JsonSerializable
 	 */
 	public function getOriginal(string $field = null) {
 		if ($field) {
-			return isset($this->original[$field]) ? $this->original[$field] : null;
+			return isset($this->_original[$field]) ? $this->_original[$field] : null;
 		}
-		return $this->original;
+		return $this->_original;
 	}
 
 	public function resetChanged() {
-		$this->changed = [];
+		$this->_changed = [];
 	}
 
 	/**
@@ -341,7 +343,7 @@ abstract class BaseModel implements \JsonSerializable
 	 * @param boolean $state
 	 */
 	public function setHydrating(bool $state) {
-		$this->hydrating = $state;
+		$this->_hydrating = $state;
 	}
 
 	/**
@@ -371,18 +373,18 @@ abstract class BaseModel implements \JsonSerializable
 
 	public function getData() {
 		$data = [];
-		foreach (static::$fields as $field => $options) {
-//			if (!array_key_exists($field, $this->data)) {
+		foreach ($this->_fields as $field => $options) {
+//			if (!array_key_exists($field, $this->_data)) {
 //				continue;
 //			}
 			$cast = $this->getCast($options);
 			if (is_string($cast)) {
-				$data[$field] = $this->data[$field];
+				$data[$field] = $this->_data[$field];
 			} elseif ($cast[0] === 'array') {
-				$data[$field] = $this->getArray($cast, (array) $this->data[$field]);
+				$data[$field] = $this->getArray($cast, (array) $this->_data[$field]);
 			} elseif ($cast[0] === 'object') {
-				if (is_object($this->data[$field])) {
-					$cData = $this->data[$field]->getData();
+				if (is_object($this->_data[$field])) {
+					$cData = $this->_data[$field]->getData();
 					if (count($cData)) {
 						$data[$field] = $cData;
 					}
@@ -409,26 +411,26 @@ abstract class BaseModel implements \JsonSerializable
 
 	public function getChangedFields($pure = false) {
 		$changedData = [];
-		foreach (static::$fields as $field => $options) {
-			if (!isset($this->data[$field])) {
+		foreach ($this->_fields as $field => $options) {
+			if (!isset($this->_data[$field])) {
 				continue;
 			}
 			$cast = $this->getCast($options);
 			if (is_string($cast)) {
-				if (in_array($field, $this->changed)) {
-					$changedData[$field] = $this->data[$field];
+				if (in_array($field, $this->_changed)) {
+					$changedData[$field] = $this->_data[$field];
 				}
-			} elseif (is_array($cast) && $cast[0] === 'array' && is_object($this->data[$field]) && get_class($this->data[$field]) === 'ArrayObject') {
+			} elseif (is_array($cast) && $cast[0] === 'array' && is_object($this->_data[$field]) && get_class($this->_data[$field]) === 'ArrayObject') {
 				$original = $this->getArray($cast, (array) $this->getOriginal($field));
-				$current = $this->getArray($cast, (array) $this->data[$field]);
+				$current = $this->getArray($cast, (array) $this->_data[$field]);
 				if (json_encode($current) !== json_encode($original)) {
 					$changedData[$field] = $current;
 				}
 			} else {
-				if (in_array($field, $this->changed) && !is_object($this->data[$field])) {
+				if (in_array($field, $this->_changed) && !is_object($this->_data[$field])) {
 					$changedData[$field] = null;
-				} elseif (!in_array($field, $this->changed) && is_object($this->data[$field])) {
-					$data = $this->data[$field]->getData();
+				} elseif (!in_array($field, $this->_changed) && is_object($this->_data[$field])) {
+					$data = $this->_data[$field]->getData();
 					if (count($data) && $data !== $this->getOriginal($field)->getData()) {
 						$changedData[$field] = $data;
 					}
@@ -439,15 +441,17 @@ abstract class BaseModel implements \JsonSerializable
 	}
 
 	protected function addTimestamps(\Carbon\Carbon $timestamp = null) {
-		if (($key = array_search('createdTimestamp', static::$fields)) !== false) {
-			if (!isset($this->data[$key]) || $this->data[$key] === null) {
-				$this->data[$key] = $timestamp ?: new \Carbon\Carbon();
+		if (($key = array_search('createdTimestamp', $this->_fields)) !== false) {
+			if (!isset($this->_data[$key]) || $this->_data[$key] === null) {
+				$this->_data[$key] = $timestamp ?: new \Carbon\Carbon();
 			}
 		}
-		if (($key = array_search('updatedTimestamp', static::$fields)) !== false) {
-			$this->data[$key] = $timestamp ?: new \Carbon\Carbon();
+		if (($key = array_search('updatedTimestamp', $this->_fields)) !== false) {
+			$this->_data[$key] = $timestamp ?: new \Carbon\Carbon();
 		}
 	}
+
+	abstract protected function addSoftDeleteWhere(QueryBuilder $queryBuilder);
 
 	/**
 	 * Remove entry from database
@@ -458,8 +462,8 @@ abstract class BaseModel implements \JsonSerializable
 		$queryBuilder = static::getQueryBuilder();
 		$return = $queryBuilder
 			->table(static::getTableName())
-			->softDelete(array_search('deletedTimestamp', static::$fields))
-			->where(static::$primaryKey, $this->{static::$primaryKey})
+			->softDelete(array_search('deletedTimestamp', $this->_fields))
+			->where(static::$_primaryKey, $this->{static::$_primaryKey})
 			->limit(1)
 			->delete();
 		return $return ? $queryBuilder->rowCount() : null;
@@ -473,7 +477,7 @@ abstract class BaseModel implements \JsonSerializable
 	public static function query() {
 		$queryBuilder = static::getQueryBuilder();
 		$queryBuilder->setHydrate(static::class);
-		$queryBuilder = $queryBuilder->table(static::getTableName())->select(array_keys(static::$fields));
+		$queryBuilder = $queryBuilder->table(static::getTableName())->select(array_keys($this->_fields));
 		return $queryBuilder;
 	}
 

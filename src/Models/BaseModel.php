@@ -79,7 +79,7 @@ abstract class BaseModel implements \JsonSerializable
 	 * Allows object to be unserializable
 	 */
 	public function __wakeup() {
-		$this->original = $this->data;
+		$this->_original = $this->_data;
 	}
 
 	/**

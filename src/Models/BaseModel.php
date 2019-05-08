@@ -76,7 +76,8 @@ abstract class BaseModel implements \JsonSerializable
 					}
 				}
 				if (key_exists('type', $options)) {
-					$this->$prop = new $options['type']($options['default']);
+					$this->_data[$prop] = new $options['type']($options['default']);
+					unset($this->$prop);
 				}
 			}
 		}

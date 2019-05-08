@@ -2,6 +2,8 @@
 
 namespace phpDM\Models;
 
+use \phpDM\Models\FieldFactories;
+
 class MysqlModel extends BaseModel
 {
 

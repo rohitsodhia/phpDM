@@ -33,7 +33,7 @@ abstract class BaseModel implements \JsonSerializable
 	/**
 	 * @var boolean Marks as hydrating, bypassing some validation
 	 */
-	protected $_hydrating = false;
+	protected $_hydrating = true;
 
 	/**
 	 * @var string Collection primary key
@@ -55,6 +55,7 @@ abstract class BaseModel implements \JsonSerializable
 	 */
 	public function __construct($data = []) {
 		$this->_parseFields();
+		$this->_hydrating = false;
 	}
 
 	protected function _parseFields() {
@@ -174,29 +175,13 @@ abstract class BaseModel implements \JsonSerializable
 	 * @return mixed
 	 */
 	public function __get(string $key) {
-		if (!property_exists($this, $key)) {
+		if (!property_exists($this->_data, $key)) {
 			trigger_error('Invalid field: ' . $key);
-			// throw new \Exception('Invalid field: ' . $key);
 		}
-		return $this->$key->get();-$value = null;
-		$value = null;
-		if (isset($this->data[$key])) {
-			$value = $this->data[$key];
-			$accessor = 'get' . \phpDM\Helpers::toCamelCase($key, true);
-			if (method_exists($this, $accessor)) {
-				$value = $this->{$accessor}($value);
-			}
-		} elseif (isset($this->key) && ($this->$key === 'object'  || substr($this->$key, 0, 7) === 'object:')) {
-			if ($this->$key === 'object') {
-				$value = new GenericModel(static::class, $this->$key['fields']);
-			} else {
-				$class = substr($this->$key, 7);
-				if (!class_exists($class)) {
-					throw new Exception('Field not an object');
-				}
-				$value = new $class();
-			}
-			$this->data[$key] = $value;
+		$value = $this->_data[$key]->get();
+		$accessor = 'get' . \phpDM\Helpers::toCamelCase($key, true);
+		if (method_exists($this, $accessor)) {
+			$value = $this->{$accessor}($value);
 		}
 		return $value;
 	}
@@ -208,25 +193,20 @@ abstract class BaseModel implements \JsonSerializable
 	 * @param mixed $value Value of field
 	 */
 	public function __set(string $key, $value) {
-		if (!property_exists($this, $key) && $value instanceof BaseField) {
+		if (preg_match('/[a-z]/i', $key[0]) === 0) {
+			trigger_error('Invalid field: ' . $key);
+		} elseif (property_exists($this, $key) && $value instanceof BaseField) {
 			$this->$key = $value;
 			return;
-		} elseif (!property_exists($this, $key)) {
+		} elseif (!array_key_exists($key, $this->_data)) {
 			trigger_error('Invalid field: ' . $key);
-			// throw new \Exception('Invalid field: ' . $key);
 		}
-		if (!$this->_hydrating) {
-			$accessor = 'set' . \phpDM\Helpers::toCamelCase($key, true);
-			if (method_exists($this, $accessor)) {
-				$this->{$accessor}($value);
-				$value = $this->_data[$key];
-			}
+		$mutator = 'set' . \phpDM\Helpers::toCamelCase($key, true);
+		if (method_exists($this, $mutator)) {
+			$this->{$mutator}($value);
+			$value = $this->_data[$key];
 		}
-		$value = static::parseValue($value, $this->_fields[$key]);
-		$this->_data[$key] = $value;
-		if (!in_array($value, $this->_changed)) {
-			$this->_changed[] = $key;
-		}
+		$this->_data[$key]->set($value);
 	}
 
 	protected function getCast($cast) {

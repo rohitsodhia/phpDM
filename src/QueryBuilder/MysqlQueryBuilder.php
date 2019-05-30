@@ -11,11 +11,13 @@ class MysqlQueryBuilder extends QueryBuilder
 	protected $params = [];
 	protected $statement;
 
-	public function getParams() {
+	public function getParams()
+	{
 		return $this->params;
 	}
 
-	protected static function buildCondition($val1, $val2, $comparitor = '=') {
+	protected static function buildCondition($val1, $val2, $comparitor = '=')
+	{
 		// $paramKey = \phpDM\Helpers::randStr();
 		if ($comparitor == '==') {
 			$comparitor = '=';
@@ -28,8 +30,9 @@ class MysqlQueryBuilder extends QueryBuilder
 			return "{$val1} {$comparitor} ?";
 		}
 	}
-	
-	public function where() {
+
+	public function where()
+	{
 		$args = func_get_args();
 		if (is_callable($args[0])) {
 			$queryBuilder = static::class;
@@ -51,7 +54,8 @@ class MysqlQueryBuilder extends QueryBuilder
 		return $this;
 	}
 
-	public function orWhere() {
+	public function orWhere()
+	{
 		$args = func_get_args();
 		if (is_callable($args[0])) {
 			$queryBuilder = static::class;
@@ -73,13 +77,15 @@ class MysqlQueryBuilder extends QueryBuilder
 		return $this;
 	}
 
-	public function whereIn(string $field, array $values) {
+	public function whereIn(string $field, array $values)
+	{
 		$this->conditions[] = "{$field} IN (" . implode(', ', array_fill(0, count($values), '?')) . ')';
 		$this->params = array_merge($this->params, $values);
 		return $this;
 	}
 
-	public function sort($field, $direction = 'asc') {
+	public function sort($field, $direction = 'asc')
+	{
 		$direction = strtoupper($direction);
 		if ($direction === 'ASC' || $direction === 'DESC') {
 			$this->sort[] = '`' . $field . '` ' . $direction;
@@ -87,11 +93,13 @@ class MysqlQueryBuilder extends QueryBuilder
 		return $this;
 	}
 
-	public function rowCount() {
+	public function rowCount()
+	{
 		return $this->statement->rowCount();
 	}
 
-	public function buildSelectQuery() {
+	public function buildSelectQuery()
+	{
 		$query = 'SELECT ';
 		if (count($this->select)) {
 			$query .= '`' . implode('`, `', $this->select) . '`';
@@ -115,7 +123,8 @@ class MysqlQueryBuilder extends QueryBuilder
 		return $query;
 	}
 
-	public function get() {
+	public function get()
+	{
 		$query = $this->buildSelectQuery();
 		$pQuery = $this->connection->prepare($query);
 		$pQuery->execute($this->params);
@@ -135,7 +144,8 @@ class MysqlQueryBuilder extends QueryBuilder
 		return $this->limit === 1 ? $objs[0] : $objs;
 	}
 
-	protected static function encodeData($data) {
+	protected static function encodeData($data)
+	{
 		foreach ($data as $key => $value) {
 /*			if (is_bool($value)) {
 				$data[$key] = $value ? '1' : '0';
@@ -148,7 +158,8 @@ class MysqlQueryBuilder extends QueryBuilder
 		return $data;
 	}
 
-	public function insert($data) {
+	public function insert($data)
+	{
 		$data = static::encodeData($data);
 		$query = "INSERT INTO {$this->table} SET ";
 		$columns = [];
@@ -162,11 +173,13 @@ class MysqlQueryBuilder extends QueryBuilder
 		return $this->statement->execute($values);
 	}
 
-	public function lastInsertId() {
+	public function lastInsertId()
+	{
 		return $this->connection->lastInsertId();
 	}
 
-	public function update($data) {
+	public function update($data)
+	{
 		if ($this->conditions !== []) {
 			$data = static::encodeData($data);
 			$query = "UPDATE {$this->table} SET ";
@@ -194,7 +207,8 @@ class MysqlQueryBuilder extends QueryBuilder
 		}
 	}
 
-	public function remove() {
+	public function remove()
+	{
 		$query = "DELETE FROM {$this->table}";
 		if (count($this->conditions)) {
 			$query .= ' WHERE ' . implode(' AND ', $this->conditions);
@@ -209,5 +223,4 @@ class MysqlQueryBuilder extends QueryBuilder
 		$this->statement = $this->connection->prepare($query);
 		return $this->statement->execute($this->params);
 	}
-
 }

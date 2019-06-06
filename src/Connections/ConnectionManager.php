@@ -67,7 +67,7 @@ class ConnectionManager
 	 * @param string|null $name Connection name
 	 * @return ConnectionInterface|null
 	 */
-	public function getConnection(string $type, string $name = null) {
+	public function getConnection(string $type, string $name = null, bool $required = false) {
 		if ($name !== null && strlen($name)) {
 			if (key_exists($name, $this->connectionNameTypeMap)) {
 				return $this->connections[$this->connectionNameTypeMap[$name]][$name];
@@ -76,6 +76,9 @@ class ConnectionManager
 			 }
 		} elseif (key_exists($type, $this->connections)) {
 			return array_values($this->connections[$type])[0];
+		}
+		if ($required) {
+			throw new \Exception('No connection');
 		}
 		return null;
 	}

@@ -9,7 +9,7 @@ class IntegerField extends BaseField
 
 	public function set($value)
 	{
-		$value = (int) $value;
+		$value = $value !== null ? (int) $value : null;
 		return parent::set($value);
 	}
 

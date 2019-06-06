@@ -8,9 +8,11 @@ abstract class BaseField implements \JsonSerializable
 	protected const TYPE = null;
 	protected $value;
 	protected $history = [];
+	protected $immutable = false;
 
-	public function __construct($value = null) {
+	public function __construct($value = null, bool $immutable = false) {
 		$this->set($value);
+		$this->immutable = $immutable;
 	}
 
 	public function get() {
@@ -22,8 +24,10 @@ abstract class BaseField implements \JsonSerializable
 	}
 
 	public function set($value) {
-		$this->value = $value;
-		$this->history[] = $value;
+		if (!$this->immutable) {
+			$this->value = $value;
+			$this->history[] = $value;
+		}
 		return $this->value;
 	}
 

@@ -89,7 +89,7 @@ abstract class QueryBuilder
 	 * @param string $table Table name
 	 * @return QueryBuilder Current object to chain
 	 */
-	public function table(string $table): QueryBuilder
+	public function table(string $table)
 	{
 		$this->table = $table;
 		return $this;
@@ -111,7 +111,7 @@ abstract class QueryBuilder
 	 * @param string|array $select string|array Fields to return
 	 * @return QueryBuilder Current object to chain
 	 */
-	public function select(mixed $select): QueryBuilder
+	public function select(\mixed $select)
 	{
 		if (gettype($select) === 'string') {
 			$this->select[] = $select;
@@ -124,22 +124,22 @@ abstract class QueryBuilder
 	/**
 	 * Abstract to set query conditions
 	 */
-	abstract public function where(): QueryBuilder;
+	abstract public function where();
 
 	/**
 	 * Abstract to set query or conditions
 	 */
-	abstract public function orWhere(): QueryBuilder;
+	abstract public function orWhere();
 
 	/**
 	 * Abstract to set query in set conditions
 	 */
-	abstract public function whereIn(string $field, array $values): QueryBuilder;
+	abstract public function whereIn(string $field, array $values);
 
 	/**
 	 * Abstract to set query sorting
 	 */
-	abstract public function sort($field, $direction = 'asc'): QueryBuilder;
+	abstract public function sort($field, $direction = 'asc');
 
 	/**
 	 * Set query limit
@@ -147,7 +147,7 @@ abstract class QueryBuilder
 	 * @param integer $limit Max number of rows to return
 	 * @return QueryBuilder Current object to chain
 	 */
-	public function limit(int $limit): QueryBuilder
+	public function limit(int $limit)
 	{
 		$this->limit = $limit;
 		return $this;
@@ -159,7 +159,7 @@ abstract class QueryBuilder
 	 * @param integer $skip Number of rows to skip before returning results
 	 * @return QueryBuilder Current object to chain
 	 */
-	public function skip(int $skip): QueryBuilder
+	public function skip(int $skip)
 	{
 		$this->skip = $skip;
 		return $this;
@@ -172,7 +172,7 @@ abstract class QueryBuilder
 	 * @param integer $page Used to calculate skip
 	 * @return QueryBuilder Current object to chain
 	 */
-	public function paginate(int $numItems, int $page): QueryBuilder
+	public function paginate(int $numItems, int $page)
 	{
 		$this->limit($numItems);
 		$this->skip(($page - 1) * $numItems);

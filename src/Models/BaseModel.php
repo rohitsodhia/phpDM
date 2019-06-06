@@ -118,7 +118,10 @@ abstract class BaseModel implements \JsonSerializable
 	 * @return array
 	 */
 	public function __sleep() {
-		return ['data'];
+		foreach ($this->_data as $key => $value) {
+			$this->_serialized[$key] = $value->get();
+		}
+		return ['_serialized'];
 	}
 
 	/**
@@ -129,12 +132,17 @@ abstract class BaseModel implements \JsonSerializable
 	}
 
 	/**
-	 * Allows method to be JSON serializable
+	 * Allows object to be JSON serializable
 	 *
 	 * @return array Array of data values
 	 */
 	public function jsonSerialize() {
 		return $this->getData(true);
+	}
+
+	public static function fromJSON($data) {
+		$obj = new static($data);
+		return $obj;
 	}
 
 	/**

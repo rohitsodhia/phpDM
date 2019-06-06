@@ -26,6 +26,13 @@ abstract class BaseModel implements \JsonSerializable
 	protected static $table = null;
 
 	/**
+	 * @var array Array of pointers to special fields (primary key, created timestamp, etc)
+	 */
+	protected $_specialFields = [];
+
+	protected $_defaultPrimaryKey = null;
+
+	/**
 	 * @var boolean Tracks if the model is new (not from database)
 	 */
 	protected $_new = true;
@@ -36,11 +43,6 @@ abstract class BaseModel implements \JsonSerializable
 	protected $_hydrating = true;
 
 	/**
-	 * @var string Collection primary key
-	 */
-	protected static $_primaryKey;
-
-	/**
 	 * @var string Format for the timestring built by Carbon
 	 */
 	protected $_timestampFormat = 'Y-m-d H:i:s';
@@ -48,36 +50,62 @@ abstract class BaseModel implements \JsonSerializable
 	protected $_fieldFactory = null;
 	protected $_data = [];
 
+	protected $_serialized = [];
+
 	/**
 	 * Initilize model with data
 	 *
-	 * @param array $data
+	 * @param array|string $data
 	 */
-	public function __construct($data = []) {
-		$this->_parseFields();
+	public function __construct($data = null) {
+		if (is_string($data) && $parsedData = json_decode($data)) {
+			$data = (array) $parsedData;
+		} elseif (!is_array($data)) {
+			$data = [];
+		}
+		$this->_setupFields($data);
 		$this->_hydrating = false;
 	}
 
-	protected function _parseFields() {
+	protected function _setupFields($values = []) {
 		foreach (get_object_vars($this) as $prop => $defaultValue) {
 			if ($prop[0] !== '_') {
 				$rProp = new \ReflectionProperty($this, $prop);
 				$comment = $rProp->getDocComment();
-				$tags = preg_match_all('/\*\s+@(\w+?) (.+?)\s/', $comment, $matches, PREG_SET_ORDER);
+				$tags = preg_match_all('/\*\s+@(\w+?)(?: (.+?))?\s/', $comment, $matches, PREG_SET_ORDER);
 				$options = ['default' => $defaultValue];
 				foreach ($matches as $match) {
+					if (sizeof($match) == 2) {
+						$match[] = null;
+					}
 					list($full, $tag, $tagValue) = $match;
 					switch ($tag) {
 						case 'type':
-							$options['type'] = $this->_fieldFactory::getField($tagValue);
+							$options['type'] = $tagValue;
+							$options['field'] = $this->_fieldFactory::getField($tagValue);
 							break;
 						case 'default':
 							$options['default'] = $tagValue;
 							break;
+						default:
+							$options[$tag] = true;
+							break;
 					}
 				}
-				if (key_exists('type', $options)) {
-					$this->_data[$prop] = new $options['type']($options['default']);
+				if (key_exists('field', $options)) {
+					if (key_exists($prop, $values)) {
+						$options['default'] = $values[$prop];
+					}
+					$this->_data[$prop] = new $options['field']($options['default']);
+					switch ($options['type']) {
+						case 'createdTimestamp':
+						case 'updatedTimestamp':
+						case 'deletedTimestamp':
+							$this->_specialFields[$options['type']] = &$this->_data[$prop];
+					}
+					if (isset($options['primaryKey']) && $options['primaryKey']) {
+						$this->_specialFields['primaryKey'] = &$this->_data[$prop];
+					}
 					unset($this->$prop);
 				}
 			}
@@ -369,27 +397,20 @@ abstract class BaseModel implements \JsonSerializable
 		return $obj;
 	}
 
-	public function getData() {
+	public function getData(bool $changed = false, bool $raw = false) {
 		$data = [];
-		foreach ($this->_fields as $field => $options) {
-//			if (!array_key_exists($field, $this->_data)) {
-//				continue;
-//			}
-			$cast = $this->getCast($options);
-			if (is_string($cast)) {
-				$data[$field] = $this->_data[$field];
-			} elseif ($cast[0] === 'array') {
-				$data[$field] = $this->getArray($cast, (array) $this->_data[$field]);
-			} elseif ($cast[0] === 'object') {
-				if (is_object($this->_data[$field])) {
-					$cData = $this->_data[$field]->getData();
-					if (count($cData)) {
-						$data[$field] = $cData;
-					}
-				}
+		foreach ($this->_data as $prop => $field) {
+			if ($changed && $field->changed()) {
+				$data[$field] = $this->getChanged($raw);
+			} elseif (!$changed) {
+				$data[$prop] = $field->get($raw);
 			}
 		}
 		return $data;
+	}
+
+	public function getRawData(bool $changed = false) {
+		return $this->getData($changed, true);
 	}
 
 	protected function getArray(array $cast, array $fieldValue) {
@@ -407,45 +428,12 @@ abstract class BaseModel implements \JsonSerializable
 		return $data;
 	}
 
-	public function getChangedFields($pure = false) {
-		$changedData = [];
-		foreach ($this->_fields as $field => $options) {
-			if (!isset($this->_data[$field])) {
-				continue;
-			}
-			$cast = $this->getCast($options);
-			if (is_string($cast)) {
-				if (in_array($field, $this->_changed)) {
-					$changedData[$field] = $this->_data[$field];
-				}
-			} elseif (is_array($cast) && $cast[0] === 'array' && is_object($this->_data[$field]) && get_class($this->_data[$field]) === 'ArrayObject') {
-				$original = $this->getArray($cast, (array) $this->getOriginal($field));
-				$current = $this->getArray($cast, (array) $this->_data[$field]);
-				if (json_encode($current) !== json_encode($original)) {
-					$changedData[$field] = $current;
-				}
-			} else {
-				if (in_array($field, $this->_changed) && !is_object($this->_data[$field])) {
-					$changedData[$field] = null;
-				} elseif (!in_array($field, $this->_changed) && is_object($this->_data[$field])) {
-					$data = $this->_data[$field]->getData();
-					if (count($data) && $data !== $this->getOriginal($field)->getData()) {
-						$changedData[$field] = $data;
-					}
-				}
-			}
-		}
-		return $changedData;
-	}
-
 	protected function addTimestamps(\Carbon\Carbon $timestamp = null) {
-		if (($key = array_search('createdTimestamp', $this->_fields)) !== false) {
-			if (!isset($this->_data[$key]) || $this->_data[$key] === null) {
-				$this->_data[$key] = $timestamp ?: new \Carbon\Carbon();
-			}
+		if (isset($this->_specialFields['createdTimestamp'])) {
+			$this->_specialFields['createdTimestamp']->set($timestamp ?: new \Carbon\Carbon());
 		}
-		if (($key = array_search('updatedTimestamp', $this->_fields)) !== false) {
-			$this->_data[$key] = $timestamp ?: new \Carbon\Carbon();
+		if (isset($this->_specialFields['updatedTimestamp'])) {
+			$this->_specialFields[ 'updatedTimestamp']->set($timestamp ?: new \Carbon\Carbon());
 		}
 	}
 

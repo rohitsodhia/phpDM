@@ -8,7 +8,7 @@ class MysqlModel extends BaseModel
 {
 
 	protected static $type = 'mysql';
-	static protected $_primaryKey = 'id';
+	protected $_defaultPrimaryKey = 'id';
 	protected $_fieldFactory = FieldFactories\MysqlFieldFactory::class;
 
 	protected function addSoftDeleteWhere($queryBuilder) {
@@ -69,11 +69,13 @@ class MysqlModel extends BaseModel
 			$queryBuilder = $connectionFactory->getQueryBuilder(static::$type);
 			$this->addTimestamps($curTime);
 			$data = $this->getData();
-			$queryBuilder = new $queryBuilder(static::$connection ?: null);
-			$success = $queryBuilder->table(static::getTableName())->insert($data);
-			if ($success !== false) {
-				$this->data[static::$primaryKey] = $queryBuilder->lastInsertId();
+			$queryBuilder = new $queryBuilder(static::$connection);
+			$success = $queryBuilder->table($this->getTableName())->insert($data);
+			if ($success === true) {
+				$this->_specialFields['primaryKey']->set($queryBuilder->lastInsertId());
 				return $success;
+			} else {
+				throw new \Exception('Did not save: ' . $success[2]);
 			}
 		}
 	}

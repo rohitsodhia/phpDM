@@ -147,9 +147,7 @@ class MysqlQueryBuilder extends QueryBuilder
 	protected static function encodeData($data)
 	{
 		foreach ($data as $key => $value) {
-/*			if (is_bool($value)) {
-				$data[$key] = $value ? '1' : '0';
-			} else*/if (is_object($value) && (get_class($value) === 'DateTime' || get_class($value) === 'Carbon\Carbon')) {
+			if (is_object($value) && (get_class($value) === 'DateTime' || get_class($value) === 'Carbon\Carbon')) {
 				$data[$key] = $value->format('Y-m-d H:i:s');
 			} elseif (is_array($value) || (is_object($value) && get_class($value) === 'ArrayObject')) {
 				$data[$key] = json_encode((array) $value);

@@ -67,10 +67,7 @@ abstract class QueryBuilder
 	public function __construct(string $connectionName = null)
 	{
 		$connectionManager = \phpDM\Connections\ConnectionManager::getInstance();
-		$this->adapter = $connectionManager->getConnection(static::$type, $connectionName);
-		if (!$this->adapter) {
-			throw new \Exception('No connection');
-		}
+		$this->adapter = $connectionManager->getConnection(static::$type, $connectionName, true);
 	}
 
 	/**

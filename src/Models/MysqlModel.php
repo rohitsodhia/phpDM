@@ -25,7 +25,7 @@ class MysqlModel extends BaseModel
 		$queryBuilder = static::addSoftDeleteWhere($queryBuilder);
 		$return = $queryBuilder
 			->table(static::getTableName())
-			->select(array_keys($this->fields))
+			->select(array_keys($this->_data))
 			->limit(1)
 			->get();
 		return $return;
@@ -59,9 +59,9 @@ class MysqlModel extends BaseModel
 
 	public function save() {
 		$curTime = new \Carbon\Carbon();
-		if (!$this->new && $this->data[static::$primaryKey]) {
+		if (!$this->_new && $this->_specialFields['primaryKey']->get()) {
 			$this->addTimestamps($curTime);
-			$changedData = $this->getChangedFields();
+			$changedData = $this->getData(true);
 			$return = $this->updateOneOnPrimaryKey($changedData);
 			return $return;
 		} elseif ($this->_new) {

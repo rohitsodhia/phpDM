@@ -167,13 +167,14 @@ class MysqlQueryBuilder extends QueryBuilder
 			$values[":{$key}"] = $value;
 		}
 		$query .= implode(', ', $columns);
-		$this->statement = $this->connection->prepare($query);
-		return $this->statement->execute($values);
+		$this->statement = $this->adapter->getConnection()->prepare($query);
+		$success = $this->statement->execute($values);
+		return $success ?: $this->statement->errorInfo();
 	}
 
 	public function lastInsertId()
 	{
-		return $this->connection->lastInsertId();
+		return $this->adapter->getConnection()->lastInsertId();
 	}
 
 	public function update($data)

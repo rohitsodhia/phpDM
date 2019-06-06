@@ -15,7 +15,7 @@ abstract class BaseField implements \JsonSerializable
 		$this->immutable = $immutable;
 	}
 
-	public function get() {
+	public function get($raw = true) {
 		return $this->value;
 	}
 
@@ -43,6 +43,14 @@ abstract class BaseField implements \JsonSerializable
 	public function jsonSerialize()
 	{
 		return $this->value;
+	}
+
+	public function changed() {
+		return count($this->history) > 1;
+	}
+
+	public function getChanged($raw = true) {
+		return $this->get($raw);
 	}
 
 }

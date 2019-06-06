@@ -150,8 +150,8 @@ abstract class BaseModel implements \JsonSerializable
 	 *
 	 * @return string
 	 */
-	public static function getTableName() {
-		if (isset(static::$table)) {
+	public function getTableName() {
+		if (is_string(static::$table)) {
 			return static::$table;
 		}
 
@@ -159,7 +159,8 @@ abstract class BaseModel implements \JsonSerializable
 		$adapter = $connectionManager->getConnection(static::$type, static::$connection, true);
 		$case = $adapter->getOption('case');
 
-		$table = @end(explode('\\', get_called_class()));
+		$calledClassParts = explode('\\', get_called_class());
+		$table = @end($calledClassParts);
 		$table = \phpDM\Inflect::pluralize($table);
 		if ($case === 'camel') {
 			$table = lcfirst($table);

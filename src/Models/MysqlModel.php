@@ -7,7 +7,7 @@ use \phpDM\Models\FieldFactories;
 class MysqlModel extends BaseModel
 {
 
-	private const TYPE = 'mysql';
+	protected static $type = 'mysql';
 	static protected $_primaryKey = 'id';
 	protected $_fieldFactory = FieldFactories\MysqlFieldFactory::class;
 
@@ -19,7 +19,7 @@ class MysqlModel extends BaseModel
 	}
 
 	public function first() {
-		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(self::TYPE);
+		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
 		$queryBuilder = new $queryBuilder(static::$connection ?: null);
 		$queryBuilder->setHydrate(static::class);
 		$queryBuilder = static::addSoftDeleteWhere($queryBuilder);
@@ -36,7 +36,7 @@ class MysqlModel extends BaseModel
 			return null;
 		}
 		$primaryKey = static::$primaryKey;
-		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(self::TYPE);
+		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
 		$queryBuilder = new $queryBuilder(static::$connection ?: null);
 		$queryBuilder->setHydrate(static::class);
 		$queryBuilder = $queryBuilder->table(static::getTableName())->select(array_keys($this->fields));
@@ -46,8 +46,8 @@ class MysqlModel extends BaseModel
 		return $result;
 	}
 
-	public function updateOneOnPrimaryKey($data) {
-		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(self::TYPE);
+	private function updateOneOnPrimaryKey($data) {
+		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
 		$queryBuilder = new $queryBuilder(static::$connection ?: null);
 		$return = $queryBuilder
 			->table(static::getTableName())
@@ -64,8 +64,9 @@ class MysqlModel extends BaseModel
 			$changedData = $this->getChangedFields();
 			$return = $this->updateOneOnPrimaryKey($changedData);
 			return $return;
-		} elseif ($this->new) {
-			$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(self::TYPE);
+		} elseif ($this->_new) {
+			$connectionFactory = \phpDM\Connections\ConnectionFactory::getInstance();
+			$queryBuilder = $connectionFactory->getQueryBuilder(static::$type);
 			$this->addTimestamps($curTime);
 			$data = $this->getData();
 			$queryBuilder = new $queryBuilder(static::$connection ?: null);

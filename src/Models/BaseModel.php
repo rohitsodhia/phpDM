@@ -13,17 +13,17 @@ abstract class BaseModel implements \JsonSerializable
 	/**
 	 * @var string Model type
 	 */
-	private const TYPE = '';
+	protected static $type = '';
 
 	/**
 	 * @var string Specificy a connection by name
 	*/
-	public CONST CONNECTION = null;
+	protected static $connection = null;
 
 	/**
 	 * @var string (Optional) Set a table name
 	 */
-	protected CONST TABLE = null;
+	protected static $table = null;
 
 	/**
 	 * @var boolean Tracks if the model is new (not from database)
@@ -120,10 +120,7 @@ abstract class BaseModel implements \JsonSerializable
 		}
 
 		$connectionManager = \phpDM\Connections\ConnectionManager::getInstance();
-		$adapter = $connectionManager->getConnection(static::TYPE, self::CONNECTION);
-		if (!$adapter) {
-			throw new \Exception('No connection');
-		}
+		$adapter = $connectionManager->getConnection(static::$type, static::$connection, true);
 		$case = $adapter->getOption('case');
 
 		$table = @end(explode('\\', get_called_class()));
@@ -143,9 +140,9 @@ abstract class BaseModel implements \JsonSerializable
 	 */
 	public static function getQueryBuilder(): QueryBuilder {
 		$connectionFactory = \phpDM\Connections\ConnectionFactory::getInstance();
-		$queryBuilder = $connectionFactory->getQueryBuilder(self::TYPE);
+		$queryBuilder = $connectionFactory->getQueryBuilder(static::$type);
 		$connectionManager = \phpDM\Connections\ConnectionManager::getInstance();
-		$adapter = $connectionManager->getConnection(static::TYPE, self::CONNECTION);
+		$adapter = $connectionManager->getConnection(static::$type, static::$connection);
 		$queryBuilder = new $queryBuilder($adapter ?: '');
 		$queryBuilder->table(static::getTableName())->setHydrate(static::class);
 		return $queryBuilder;

@@ -101,10 +101,10 @@ abstract class BaseModel implements \JsonSerializable
 						case 'createdTimestamp':
 						case 'updatedTimestamp':
 						case 'deletedTimestamp':
-							$this->_specialFields[$options['type']] = &$this->_data[$prop];
+							$this->_specialFields[$options['type']] = $prop;
 					}
 					if (isset($options['primaryKey']) && $options['primaryKey']) {
-						$this->_specialFields['primaryKey'] = &$this->_data[$prop];
+						$this->_specialFields['primaryKey'] = $prop;
 					}
 					unset($this->$prop);
 				}
@@ -439,10 +439,10 @@ abstract class BaseModel implements \JsonSerializable
 
 	protected function addTimestamps(\Carbon\Carbon $timestamp = null) {
 		if (isset($this->_specialFields['createdTimestamp'])) {
-			$this->_specialFields['createdTimestamp']->set($timestamp ?: new \Carbon\Carbon());
+			$this->_data[$this->_specialFields['createdTimestamp']]->set($timestamp ?: new \Carbon\Carbon());
 		}
 		if (isset($this->_specialFields['updatedTimestamp'])) {
-			$this->_specialFields[ 'updatedTimestamp']->set($timestamp ?: new \Carbon\Carbon());
+			$this->_data[$this->_specialFields[ 'updatedTimestamp']]->set($timestamp ?: new \Carbon\Carbon());
 		}
 	}
 

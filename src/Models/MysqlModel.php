@@ -12,8 +12,8 @@ class MysqlModel extends BaseModel
 	protected $_fieldFactory = FieldFactories\MysqlFieldFactory::class;
 
 	protected function addSoftDeleteWhere($queryBuilder) {
-		if (($key = array_search('deletedTimestamp', $this->fields)) !== false) {
-			$queryBuilder->where($key, null);
+		if (array_key_exists('deletedTimestamp', $this->_specialFields)) {
+			$queryBuilder->where($this->_specialFields['deletedTimestamp'], null);
 		}
 		return $queryBuilder;
 	}
@@ -59,7 +59,7 @@ class MysqlModel extends BaseModel
 
 	public function save() {
 		$curTime = new \Carbon\Carbon();
-		if (!$this->_new && $this->_specialFields['primaryKey']->get()) {
+		if (!$this->_new && $this->_data[$this->_specialFields['primaryKey']]->get()) {
 			$this->addTimestamps($curTime);
 			$changedData = $this->getData(true);
 			$return = $this->updateOneOnPrimaryKey($changedData);
@@ -72,7 +72,7 @@ class MysqlModel extends BaseModel
 			$queryBuilder = new $queryBuilder(static::$connection);
 			$success = $queryBuilder->table($this->getTableName())->insert($data);
 			if ($success === true) {
-				$this->_specialFields['primaryKey']->set($queryBuilder->lastInsertId());
+				$this->_data[$this->_specialFields['primaryKey']]->set($queryBuilder->lastInsertId());
 				return $success;
 			} else {
 				throw new \Exception('Did not save: ' . $success[2]);

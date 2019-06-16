@@ -11,7 +11,7 @@ class MysqlModel extends BaseModel
 	protected $_defaultPrimaryKey = 'id';
 	protected $_fieldFactory = FieldFactories\MysqlFieldFactory::class;
 
-	protected function addSoftDeleteWhere($queryBuilder) {
+	public function addSoftDeleteWhere($queryBuilder) {
 		if (array_key_exists('deletedTimestamp', $this->_specialFields)) {
 			$queryBuilder->where($this->_specialFields['deletedTimestamp'], null);
 		}
@@ -19,38 +19,42 @@ class MysqlModel extends BaseModel
 	}
 
 	public function first() {
-		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
+		$connectionFactory = \phpDM\Connections\ConnectionFactory::getInstance();
+		$queryBuilder = $connectionFactory->getQueryBuilder(static::$type);
 		$queryBuilder = new $queryBuilder(static::$connection ?: null);
 		$queryBuilder->setHydrate(static::class);
 		$queryBuilder = static::addSoftDeleteWhere($queryBuilder);
 		$return = $queryBuilder
-			->table(static::getTableName())
+			->table($this->getTableName())
 			->select(array_keys($this->_data))
 			->limit(1)
 			->get();
 		return $return;
 	}
 
-	public function find($id) {
-		if (!isset(static::$primaryKey)) {
+	public static function find($id) {
+		$model = new static();
+		if (!isset($model->_specialFields['primaryKey'])) {
 			return null;
 		}
-		$primaryKey = static::$primaryKey;
-		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
+		$connectionFactory = \phpDM\Connections\ConnectionFactory::getInstance();
+		$queryBuilder = $connectionFactory->getQueryBuilder(static::$type);
 		$queryBuilder = new $queryBuilder(static::$connection ?: null);
-		$queryBuilder->setHydrate(static::class);
-		$queryBuilder = $queryBuilder->table(static::getTableName())->select(array_keys($this->fields));
-		$queryBuilder->where($primaryKey, $id);
-		$queryBuilder = static::addSoftDeleteWhere($queryBuilder);
+		$queryBuilder->table($model->getTableName());
+		$queryBuilder->select($model->getFieldNames());
+		$queryBuilder->where($model->getSpecialField('primaryKey'), $id);
+		$queryBuilder = $model->addSoftDeleteWhere($queryBuilder);
 		$result = $queryBuilder->first();
-		return $result;
+		var_dump($result); exit;
+		$model->hydrate($result);
+		return $model;
 	}
 
 	private function updateOneOnPrimaryKey($data) {
 		$queryBuilder = \phpDM\Connections\ConnectionFactory::getQueryBuilder(static::$type);
 		$queryBuilder = new $queryBuilder(static::$connection ?: null);
 		$return = $queryBuilder
-			->table(static::getTableName())
+			->table($this->getTableName())
 			->where(static::$primaryKey, $this->{static::$primaryKey})
 			->limit(1)
 			->update($data);

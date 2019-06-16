@@ -8,8 +8,6 @@ use phpDM\Models\Fields\BaseField;
 abstract class BaseModel implements \JsonSerializable
 {
 
-	protected $_settingUp = true;
-
 	/**
 	 * @var string Model type
 	 */
@@ -128,7 +126,7 @@ abstract class BaseModel implements \JsonSerializable
 	 * Allows object to be unserializable
 	 */
 	public function __wakeup() {
-		$this->_original = $this->_data;
+		var_dump($this);
 	}
 
 	/**
@@ -168,6 +166,14 @@ abstract class BaseModel implements \JsonSerializable
 			$table = \phpDM\Helpers::toSnakeCase($table);
 		}
 		return $table;
+	}
+
+	public function getFieldNames() {
+		return array_keys($this->_data);
+	}
+
+	public function getSpecialField(string $fieldType) {
+		return isset($this->_specialFields[$fieldType]) ? $this->_specialFields[$fieldType] : false;
 	}
 
 	/**
@@ -387,23 +393,10 @@ abstract class BaseModel implements \JsonSerializable
 	 * @param array $data
 	 * @return BaseModel
 	 */
-	public static function hydrate($data) {
-		if ($data === null) {
-			return null;
+	public function hydrate($data) {
+		foreach ($data as $key => $value) {
+			$this->_data[$key]->reset($value);
 		}
-		$class = static::class;
-		$obj = new $class();
-		$obj->setHydrating(true);
-		if (count($data)) {
-			foreach ($data as $key => $value) {
-				$obj->$key = $value;
-			}
-		}
-		$obj->setHydrating(false);
-		$obj->setOriginal();
-		$obj->resetChanged();
-		$obj->setNew(false);
-		return $obj;
 	}
 
 	public function getData(bool $changed = false, bool $raw = false) {

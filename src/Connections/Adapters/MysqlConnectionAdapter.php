@@ -21,8 +21,9 @@ class MysqlConnectionAdapter extends ConnectionAdapterInterface
 		$options = array_merge([
 			\PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_OBJ,
 			\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
-		], $config);
+		], isset($config['pdoAttrs']) ? $config['pdoAttrs'] : []);
 		$mysql = new \PDO("mysql:host={$hostname};dbname={$database}", $config['username'], $config['password'], $options);
+		$mysql->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_OBJ);
 		return $mysql;
 	}
 

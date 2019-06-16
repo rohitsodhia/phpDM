@@ -129,19 +129,7 @@ class MysqlQueryBuilder extends QueryBuilder
 		$pQuery = $this->adapter->getConnection()->prepare($query);
 		$pQuery->execute($this->params);
 		$data = $pQuery->fetchAll();
-		if ($this->hydrate === null) {
-			return $this->limit === 1 ? $data[0] : $data;
-		}
-		$objs = [];
-		$hydrateClass = $this->hydrate;
-		foreach ($data as $iData) {
-			$obj = $hydrateClass::hydrate($iData);
-			$objs[] = $obj;
-		}
-		if (count($objs) === 0) {
-			return null;
-		}
-		return $this->limit === 1 ? $objs[0] : $objs;
+		return $this->limit === 1 ? $data[0] : $data;
 	}
 
 	protected static function encodeData($data)

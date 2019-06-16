@@ -108,7 +108,7 @@ abstract class QueryBuilder
 	 * @param string|array $select string|array Fields to return
 	 * @return QueryBuilder Current object to chain
 	 */
-	public function select(\mixed $select)
+	public function select($select)
 	{
 		if (gettype($select) === 'string') {
 			$this->select[] = $select;

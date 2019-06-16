@@ -31,6 +31,14 @@ abstract class BaseField implements \JsonSerializable
 		return $this->value;
 	}
 
+	public function reset($value = null) {
+		if ($this->immutable) {
+			throw \Exception('Cannot change an immutable value');
+		}
+		$this->history = [];
+		$this->set($value);
+	}
+
 	public function __wakeup() {
 		var_dump($this);
 	}

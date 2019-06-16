@@ -126,7 +126,7 @@ class MysqlQueryBuilder extends QueryBuilder
 	public function get()
 	{
 		$query = $this->buildSelectQuery();
-		$pQuery = $this->connection->prepare($query);
+		$pQuery = $this->adapter->getConnection()->prepare($query);
 		$pQuery->execute($this->params);
 		$data = $pQuery->fetchAll();
 		if ($this->hydrate === null) {
@@ -199,7 +199,7 @@ class MysqlQueryBuilder extends QueryBuilder
 					$query .= ' LIMIT ' . $this->limit;
 				}
 			}
-			$this->statement = $this->connection->prepare($query);
+			$this->statement = $this->adapter->getConnection()->prepare($query);
 			return $this->statement->execute(array_merge($values, $this->params));
 		} else {
 			return null;
@@ -219,7 +219,7 @@ class MysqlQueryBuilder extends QueryBuilder
 				$query .= ' LIMIT ' . $this->limit;
 			}
 		}
-		$this->statement = $this->connection->prepare($query);
+		$this->statement = $this->adapter->getConnection()->prepare($query);
 		return $this->statement->execute($this->params);
 	}
 }

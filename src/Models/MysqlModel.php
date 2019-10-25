@@ -18,18 +18,18 @@ class MysqlModel extends BaseModel
 		return $queryBuilder;
 	}
 
-	public function first() {
+	public static function first() {
+		$model = new static();
 		$connectionFactory = \phpDM\Connections\ConnectionFactory::getInstance();
-		$queryBuilder = $connectionFactory->getQueryBuilder(static::$type);
-		$queryBuilder = new $queryBuilder(static::$connection ?: null);
-		$queryBuilder->setHydrate(static::class);
-		$queryBuilder = static::addSoftDeleteWhere($queryBuilder);
-		$return = $queryBuilder
-			->table($this->getTableName())
-			->select(array_keys($this->_data))
-			->limit(1)
-			->get();
-		return $return;
+		$queryBuilderClass = $connectionFactory->getQueryBuilder(static::$type);
+		$queryBuilder = new $queryBuilderClass(static::$connection ?: null);
+		$queryBuilder = $model->addSoftDeleteWhere($queryBuilder);
+		$result = $queryBuilder
+			->table($model->getTableName())
+			->select($model->getFieldNames())
+			->first();
+		$model->hydrate($result);
+		return $model;
 	}
 
 	public static function find($id) {
@@ -38,14 +38,17 @@ class MysqlModel extends BaseModel
 			return null;
 		}
 		$connectionFactory = \phpDM\Connections\ConnectionFactory::getInstance();
-		$queryBuilder = $connectionFactory->getQueryBuilder(static::$type);
-		$queryBuilder = new $queryBuilder(static::$connection ?: null);
-		$queryBuilder->table($model->getTableName());
-		$queryBuilder->select($model->getFieldNames());
-		$queryBuilder->where($model->getSpecialField('primaryKey'), $id);
+		$queryBuilderClass = $connectionFactory->getQueryBuilder(static::$type);
+		$queryBuilder = new $queryBuilderClass(static::$connection ?: null);
+		$queryBuilder
+			->table($model->getTableName())
+			->select($model->getFieldNames())
+			->where($model->getSpecialField('primaryKey'), $id);
 		$queryBuilder = $model->addSoftDeleteWhere($queryBuilder);
 		$result = $queryBuilder->first();
-		var_dump($result); exit;
+		if ($result === null) {
+			return false;
+		}
 		$model->hydrate($result);
 		return $model;
 	}

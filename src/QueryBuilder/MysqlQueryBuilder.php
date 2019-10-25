@@ -128,6 +128,9 @@ class MysqlQueryBuilder extends QueryBuilder
 		$query = $this->buildSelectQuery();
 		$pQuery = $this->adapter->getConnection()->prepare($query);
 		$pQuery->execute($this->params);
+		if ($pQuery->rowCount() === 0) {
+			return null;
+		}
 		$data = $pQuery->fetchAll();
 		return $this->limit === 1 ? $data[0] : $data;
 	}
